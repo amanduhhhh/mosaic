@@ -4,3 +4,4 @@ export { Table } from './Table';
 export { Timeline } from './Timeline';
 export { LineChart } from './LineChart';
 export { BarChart } from './BarChart';
+export { Header } from './Header';

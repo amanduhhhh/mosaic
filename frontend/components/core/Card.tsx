@@ -8,7 +8,7 @@ import { THEMES } from '@/lib/themes';
 import type { ThemeName } from '@/components/types';
 
 interface CardProps {
-    variant?: 'default' | 'metric' | 'stat';
+    variant?: 'default' | 'metric' | 'stat' | 'image';
     icon?: ReactNode;
     title?: string;
     value?: string | number;
@@ -16,6 +16,7 @@ interface CardProps {
     trend?: { value: number; label: string };
     onClick?: () => void;
     children?: ReactNode;
+    image?: string;
     className?: string;
     theme?: ThemeName;
 }
@@ -29,6 +30,7 @@ export function Card({
     trend,
     onClick,
     children,
+    image,
     className,
     theme: propTheme,
 }: CardProps) {
@@ -188,10 +190,51 @@ export function Card({
             );
         }
 
+        if (variant === 'image') {
+            return (
+                <>
+                    {image && (
+                        <div className={cn(
+                            'mb-4 overflow-hidden',
+                            theme === 'tokyo-night' && 'rounded-lg',
+                            theme === 'impact' && '',
+                            theme === 'elegant' && 'rounded-lg'
+                        )}>
+                            <div className={cn(
+                                'aspect-square bg-muted',
+                                theme === 'tokyo-night' && 'rounded-lg',
+                                theme === 'impact' && '',
+                                theme === 'elegant' && 'rounded-lg'
+                            )}>
+                                <img
+                                    src={image}
+                                    alt={title || ''}
+                                    className="h-full w-full object-cover"
+                                />
+                            </div>
+                        </div>
+                    )}
+                    {title && (
+                        <h3 className={cn(
+                            'font-semibold',
+                            themeConfig.fonts.heading,
+                            theme === 'impact' && 'text-xs uppercase tracking-widest',
+                            theme === 'elegant' && 'text-sm'
+                        )}>
+                            {title}
+                        </h3>
+                    )}
+                    {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
+                    {children && <div className="mt-2">{children}</div>}
+                </>
+            );
+        }
+
         return (
             <>
                 {title && <h3 className={cn('font-semibold', themeConfig.fonts.heading)}>{title}</h3>}
                 {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
+                {children && <div className="mt-2">{children}</div>}
             </>
         );
     };

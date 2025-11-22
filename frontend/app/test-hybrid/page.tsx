@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HybridRenderer } from '@/components/HybridRenderer';
-import type { DataContext, HydrationLog, InteractionPayload, ListItem, CardData, ChartDataPoint, GridItem, TimelineEvent } from '@/components/types';
+import { useThemeStore } from '@/store/useThemeStore';
+import type { DataContext, HydrationLog, InteractionPayload, ListItem, CardData, ChartDataPoint, GridItem, TimelineEvent, ThemeName } from '@/components/types';
 
 const mockDataContext: DataContext = {
   music: {
@@ -80,7 +81,7 @@ const simulatedLLMResponse = `
     <component-slot
       type="Chart"
       data-source="stats::weekly"
-      config='{}'
+      config='{"layout": "bar"}'
       interaction="hover"
     ></component-slot>
   </div>
@@ -126,6 +127,7 @@ const stageLabels: Record<string, string> = {
 };
 
 export default function TestHybridPage() {
+  const { currentTheme, setTheme } = useThemeStore();
   const [htmlContent, setHtmlContent] = useState('');
   const [logs, setLogs] = useState<HydrationLog[]>([]);
   const [interactions, setInteractions] = useState<InteractionPayload[]>([]);
@@ -183,11 +185,33 @@ export default function TestHybridPage() {
   const currentStages = [...new Set(logs.map(l => l.stage))];
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900">
-      <div className="border-b border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
-        <h1 className="mb-4 text-xl font-semibold text-zinc-900 dark:text-zinc-100">
-          HybridRenderer Demo - Hydration Stages
-        </h1>
+    <div className="min-h-screen bg-background">
+      <div className="border-b border-border bg-card p-4">
+        <div className="mb-4 flex items-center justify-between">
+          <h1 className="text-xl font-semibold text-foreground">
+            HybridRenderer Demo - Hydration Stages
+          </h1>
+          
+          <div className="flex gap-2">
+            {(['tokyo-night', 'impact', 'elegant'] as ThemeName[]).map((theme) => (
+              <button
+                key={theme}
+                onClick={() => setTheme(theme)}
+                className={`px-4 py-2 text-sm font-semibold transition-all ${
+                  theme === 'impact' ? '' : 'rounded-lg'
+                } ${
+                  currentTheme === theme
+                    ? 'bg-primary text-primary-foreground shadow-lg scale-105'
+                    : 'bg-card hover:bg-card/80 text-foreground'
+                }`}
+              >
+                {theme === 'tokyo-night' && ' Tokyo Night'}
+                {theme === 'impact' && ' Impact'}
+                {theme === 'elegant' && ' Elegant'}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div className="mb-4 flex flex-wrap gap-2">
           <button
@@ -236,14 +260,14 @@ export default function TestHybridPage() {
               className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all ${
                 currentStages.includes(stage as HydrationLog['stage'])
                   ? `${stageColors[stage]} text-white`
-                  : 'bg-zinc-200 text-zinc-500 dark:bg-zinc-800'
+                  : 'bg-muted text-muted-foreground'
               }`}
             >
               <div
                 className={`h-2 w-2 rounded-full ${
                   currentStages.includes(stage as HydrationLog['stage'])
                     ? 'bg-white'
-                    : 'bg-zinc-400'
+                    : 'bg-muted-foreground/50'
                 }`}
               />
               {label}
@@ -253,7 +277,7 @@ export default function TestHybridPage() {
       </div>
 
       <div className="grid h-[calc(100vh-200px)] grid-cols-1 lg:grid-cols-3">
-        <div className="overflow-auto border-r border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950 lg:col-span-2">
+        <div className="overflow-auto border-r border-border bg-background p-4 lg:col-span-2">
           <AnimatePresence mode="wait">
             {htmlContent ? (
               <motion.div
@@ -274,7 +298,7 @@ export default function TestHybridPage() {
                 key="empty"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="flex h-64 items-center justify-center text-zinc-400"
+                className="flex h-64 items-center justify-center text-muted-foreground"
               >
                 Click &quot;Simulate Stream&quot; or &quot;Load Instantly&quot; to start
               </motion.div>
@@ -282,10 +306,10 @@ export default function TestHybridPage() {
           </AnimatePresence>
         </div>
 
-        <div className="flex flex-col overflow-hidden bg-zinc-900">
-          <div className="border-b border-zinc-700 p-3">
-            <h2 className="text-sm font-semibold text-zinc-100">Hydration Logs</h2>
-            <p className="text-xs text-zinc-500">{logs.length} events</p>
+        <div className="flex flex-col overflow-hidden bg-card border-l border-border">
+          <div className="border-b border-border p-3">
+            <h2 className="text-sm font-semibold text-foreground">Hydration Logs</h2>
+            <p className="text-xs text-muted-foreground">{logs.length} events</p>
           </div>
 
           <div className="flex-1 overflow-auto p-3">
@@ -297,19 +321,19 @@ export default function TestHybridPage() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="rounded bg-zinc-800 p-2"
+                    className="rounded bg-muted/50 p-2"
                   >
                     <div className="mb-1 flex items-center gap-2">
                       <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${stageColors[log.stage]} text-white`}>
                         {log.stage}
                       </span>
-                      <span className="text-[10px] text-zinc-500">
+                      <span className="text-[10px] text-muted-foreground">
                         {new Date(log.timestamp).toLocaleTimeString()}
                       </span>
                     </div>
-                    <p className="text-xs text-zinc-300">{log.message}</p>
+                    <p className="text-xs text-foreground">{log.message}</p>
                     {log.data && (
-                      <pre className="mt-1 overflow-x-auto text-[10px] text-zinc-500">
+                      <pre className="mt-1 overflow-x-auto text-[10px] text-muted-foreground">
                         {JSON.stringify(log.data, null, 2)}
                       </pre>
                     )}
@@ -321,14 +345,14 @@ export default function TestHybridPage() {
           </div>
 
           {interactions.length > 0 && (
-            <div className="border-t border-zinc-700 p-3">
-              <h3 className="mb-2 text-xs font-semibold text-zinc-100">Recent Interactions</h3>
+            <div className="border-t border-border p-3">
+              <h3 className="mb-2 text-xs font-semibold text-foreground">Recent Interactions</h3>
               <div className="space-y-1">
                 {interactions.map((payload, index) => (
-                  <div key={index} className="rounded bg-zinc-800 p-2 text-xs">
-                    <span className="font-medium text-blue-400">{payload.componentType}</span>
-                    <span className="text-zinc-500"> • </span>
-                    <span className="text-zinc-400">{payload.interaction}</span>
+                  <div key={index} className="rounded bg-muted/50 p-2 text-xs">
+                    <span className="font-medium text-primary">{payload.componentType}</span>
+                    <span className="text-muted-foreground"> • </span>
+                    <span className="text-foreground">{payload.interaction}</span>
                   </div>
                 ))}
               </div>
