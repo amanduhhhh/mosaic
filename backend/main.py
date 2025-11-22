@@ -21,16 +21,16 @@ from integrations import (
 app = FastAPI()
 settings = get_settings()
 
-spotify_fetcher = None
-if settings.spotify_client_id and settings.spotify_client_secret:
-    spotify_fetcher = SpotifyDataFetcher(
-        client_id=settings.spotify_client_id,
-        client_secret=settings.spotify_client_secret,
-        redirect_uri=settings.spotify_redirect_uri,
-    )
+spotify_fetcher = SpotifyDataFetcher(
+    client_id=settings.spotify_client_id,
+    client_secret=settings.spotify_client_secret,
+    redirect_uri=settings.spotify_redirect_uri
+)
 
 stocks_fetcher = StocksDataFetcher(alpha_vantage_key=settings.alpha_vantage_api_key)
+
 sports_fetcher = SportsDataFetcher(api_key=settings.sports_api_key)
+
 strava_fetcher = StravaDataFetcher(
     client_id=settings.strava_client_id,
     client_secret=settings.strava_client_secret,

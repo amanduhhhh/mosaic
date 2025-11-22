@@ -21,7 +21,7 @@ class Settings(BaseSettings):
 
     clashroyale_api_key: str
 
-    # currently using yfinance, alpha advantage is not used
+    # not used currently, using yahoo finance instead
     alpha_vantage_api_key: str = ""
 
     class Config:
