@@ -1,17 +1,35 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, RedirectResponse, JSONResponse, HTMLResponse
 from pydantic import BaseModel
 from litellm import acompletion
 import json
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional
 
 from config import get_settings
-from data import MOCK_DATA, COMPONENT_SCHEMAS
+from data import MOCK_DATA, COMPONENT_SCHEMAS, get_spotify_data
 from utils import extract_complete_element, get_data
+from integrations.spotify import SpotifyDataFetcher
+from integrations.stocks import StocksDataFetcher
+from integrations.sports import SportsDataFetcher
 
 app = FastAPI()
 settings = get_settings()
+
+# Initialize Spotify fetcher
+spotify_fetcher = None
+if settings.spotify_client_id and settings.spotify_client_secret:
+    spotify_fetcher = SpotifyDataFetcher(
+        client_id=settings.spotify_client_id,
+        client_secret=settings.spotify_client_secret,
+        redirect_uri=settings.spotify_redirect_uri
+    )
+
+# Initialize Stocks fetcher (no API key needed!)
+stocks_fetcher = StocksDataFetcher(alpha_vantage_key=settings.alpha_vantage_api_key)
+
+# Initialize Sports fetcher
+sports_fetcher = SportsDataFetcher(api_key=settings.sports_api_key)
 
 app.add_middleware(
     CORSMiddleware,
@@ -48,6 +66,262 @@ class GenerateRequest(BaseModel):
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+@app.get("/api/spotify/auth")
+async def spotify_auth():
+    """Initiate Spotify OAuth flow"""
+    if not spotify_fetcher:
+        return JSONResponse(
+            status_code=400, 
+            content={"error": "Spotify credentials not configured"}
+        )
+    
+    auth_url = spotify_fetcher.get_authorization_url()
+    return {"auth_url": auth_url}
+
+
+@app.get("/api/spotify/callback")
+async def spotify_callback(code: Optional[str] = Query(None), error: Optional[str] = Query(None)):
+    """Handle Spotify OAuth callback"""
+    if error:
+        return JSONResponse(
+            status_code=400,
+            content={"error": f"Spotify authorization failed: {error}"}
+        )
+    
+    if not code:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "No authorization code provided"}
+        )
+    
+    if not spotify_fetcher:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "Spotify credentials not configured"}
+        )
+    
+    try:
+        # Exchange code for token
+        token_info = spotify_fetcher.fetch_token_from_code(code)
+        
+        # Fetch user data
+        user_data = spotify_fetcher.fetch_user_data()
+        
+        # Return success page with data summary
+        if user_data:
+            top_songs = "<br>".join([f"{i+1}. {s['title']} - {s['artist']}" for i, s in enumerate(user_data['top_songs'][:5])])
+            html = f"""
+            <html>
+                <head><title>Spotify Connected</title></head>
+                <body style="font-family: Arial; max-width: 800px; margin: 50px auto; padding: 20px;">
+                    <h1 style="color: #1DB954;">Spotify Connected Successfully!</h1>
+                    <p>Your Spotify data has been cached and will refresh automatically.</p>
+                    <h2>Your Top 5 Songs:</h2>
+                    <p>{top_songs}</p>
+                    <h2>Top Genres:</h2>
+                    <p>{', '.join(user_data['top_genres'])}</p>
+                    <hr>
+                    <p><a href="/api/spotify/data">View Full Data (JSON)</a> | <a href="/api/spotify/status">Check Status</a></p>
+                    <p><small>You can close this window now.</small></p>
+                </body>
+            </html>
+            """
+            return HTMLResponse(content=html)
+        else:
+            return JSONResponse(content={"message": "Connected but failed to fetch data. Try /api/spotify/refresh"})
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to complete authorization: {str(e)}"}
+        )
+
+
+@app.get("/api/spotify/status")
+async def spotify_status():
+    """Check if Spotify is authenticated"""
+    if not spotify_fetcher:
+        return {"authenticated": False, "message": "Spotify not configured"}
+    
+    is_auth = spotify_fetcher.is_authenticated()
+    return {"authenticated": is_auth}
+
+
+@app.get("/api/spotify/data")
+async def spotify_data():
+    """Get current Spotify data"""
+    if not spotify_fetcher:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "Spotify credentials not configured"}
+        )
+    
+    if not spotify_fetcher.is_authenticated():
+        return JSONResponse(
+            status_code=401,
+            content={"error": "Not authenticated with Spotify", "auth_required": True}
+        )
+    
+    data = spotify_fetcher.fetch_user_data()
+    if not data:
+        return JSONResponse(
+            status_code=500,
+            content={"error": "Failed to fetch Spotify data"}
+        )
+    
+    return data
+
+
+@app.post("/api/spotify/refresh")
+async def spotify_refresh():
+    """Manually refresh Spotify data"""
+    if not spotify_fetcher:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "Spotify credentials not configured"}
+        )
+    
+    if not spotify_fetcher.is_authenticated():
+        return JSONResponse(
+            status_code=401,
+            content={"error": "Not authenticated with Spotify"}
+        )
+    
+    data = spotify_fetcher.fetch_user_data()
+    if not data:
+        return JSONResponse(
+            status_code=500,
+            content={"error": "Failed to refresh Spotify data"}
+        )
+    
+    return {"message": "Data refreshed successfully", "data": data}
+
+
+# ==================== STOCKS ENDPOINTS ====================
+
+@app.get("/api/stocks/portfolio")
+async def stocks_portfolio(symbols: str = Query(..., description="Comma-separated stock symbols (e.g., AAPL,TSLA,NVDA)")):
+    """Get portfolio data for specified stock symbols"""
+    try:
+        symbol_list = [s.strip().upper() for s in symbols.split(",")]
+        data = stocks_fetcher.fetch_portfolio_data(symbol_list)
+        
+        if not data:
+            return JSONResponse(
+                status_code=500,
+                content={"error": "Failed to fetch portfolio data"}
+            )
+        
+        return data
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Error fetching portfolio: {str(e)}"}
+        )
+
+
+@app.get("/api/stocks/market")
+async def stocks_market():
+    """Get market trends and indices"""
+    try:
+        data = stocks_fetcher.fetch_market_trends()
+        
+        if not data:
+            return JSONResponse(
+                status_code=500,
+                content={"error": "Failed to fetch market data"}
+            )
+        
+        return data
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Error fetching market data: {str(e)}"}
+        )
+
+
+@app.get("/api/stocks/{symbol}")
+async def stocks_info(symbol: str):
+    """Get detailed info for a specific stock"""
+    try:
+        data = stocks_fetcher.fetch_stock_info(symbol.upper())
+        
+        if not data:
+            return JSONResponse(
+                status_code=404,
+                content={"error": f"Stock {symbol} not found"}
+            )
+        
+        return data
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Error fetching stock info: {str(e)}"}
+        )
+
+
+# ==================== SPORTS ENDPOINTS ====================
+
+@app.get("/api/sports/search")
+async def sports_search(team: str = Query(..., description="Team name to search for")):
+    """Search for a sports team"""
+    try:
+        data = sports_fetcher.search_team(team)
+        
+        if not data:
+            return JSONResponse(
+                status_code=404,
+                content={"error": f"Team '{team}' not found"}
+            )
+        
+        return data
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Error searching team: {str(e)}"}
+        )
+
+
+@app.get("/api/sports/team/{team_id}")
+async def sports_team_stats(team_id: str):
+    """Get stats for a specific team"""
+    try:
+        data = sports_fetcher.get_team_stats(team_id)
+        
+        if not data:
+            return JSONResponse(
+                status_code=404,
+                content={"error": f"Stats for team {team_id} not found"}
+            )
+        
+        return data
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Error fetching team stats: {str(e)}"}
+        )
+
+
+@app.get("/api/sports/summary")
+async def sports_summary(teams: str = Query(..., description="Comma-separated team names")):
+    """Get sports summary for multiple teams"""
+    try:
+        team_list = [t.strip() for t in teams.split(",")]
+        data = sports_fetcher.fetch_user_sports_summary(team_list)
+        
+        if not data:
+            return JSONResponse(
+                status_code=500,
+                content={"error": "Failed to fetch sports summary"}
+            )
+        
+        return data
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Error fetching sports summary: {str(e)}"}
+        )
 
 
 @app.post("/api/generate")
