@@ -74,8 +74,8 @@ export const THEMES: Record<ThemeName, ThemeConfig> = {
             },
         },
         styles: {
-            card: 'bg-card/40 border border-border/40 rounded-xl shadow-[0_2px_10px_-5px_rgba(0,0,0,0.05)]',
-            cardHover: 'hover:bg-card/80 transition-all duration-500 group relative overflow-hidden',
+            card: 'bg-card/40 border border-border/40 rounded-md shadow-[0_4px_12px_-2px_rgba(0,0,0,0.08)]',
+            cardHover: 'hover:bg-card/80 hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.12)] transition-all duration-500 group relative overflow-hidden',
             border: 'border',
         },
     },

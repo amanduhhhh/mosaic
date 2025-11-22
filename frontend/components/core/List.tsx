@@ -34,7 +34,7 @@ export function List<T extends Record<string, unknown>>({
     };
 
     return (
-        <div className={cn('flex flex-col gap-2', className)}>
+        <div className={cn('flex flex-col gap-2 max-w-[700px]', className)}>
             {items.map((item, index) => {
                 const primaryValue = item[template.primary] as string | number | null | undefined;
                 const secondaryValue = template.secondary ? (item[template.secondary] as string | number | null | undefined) : null;
@@ -52,11 +52,11 @@ export function List<T extends Record<string, unknown>>({
                         }}
                         onClick={() => onItemClick?.(item, index)}
                         className={cn(
-                            'p-3 transition-all duration-300 hover:shadow-[0_0_15px_3px] hover:shadow-white/20',
+                            'p-3 transition-all duration-300',
                             onItemClick && 'cursor-pointer',
-                            theme === 'tokyo-night' && 'rounded-lg bg-card/30 hover:bg-card/60 backdrop-blur-sm border border-border',
+                            theme === 'tokyo-night' && 'rounded-lg bg-card/30 hover:bg-card/60 backdrop-blur-sm border border-border hover:shadow-[0_0_15px_3px] hover:shadow-white/20',
                             theme === 'impact' && 'bg-linear-to-br from-white to-slate-50 border-l-4 border-primary shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all',
-                            theme === 'elegant' && 'rounded-lg bg-card/20 hover:bg-card/40 border border-border/30 transition-all duration-300'
+                            theme === 'elegant' && 'rounded-md bg-card/40 hover:bg-card/60 border border-border/40 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.12)] transition-all duration-500'
                         )}
                     >
                         <div className="flex items-center gap-3">

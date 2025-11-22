@@ -47,7 +47,7 @@ export function Timeline({
             transition={listTransition}
             className={cn(
                 'relative',
-                isVertical ? 'pl-6' : 'flex gap-4 overflow-x-auto pb-4',
+                isVertical ? 'pl-6 max-w-[700px]' : 'flex gap-4 overflow-x-auto pb-4',
                 className
             )}
         >
@@ -105,11 +105,11 @@ export function Timeline({
 
                     <div
                         className={cn(
-                            'p-3 shadow-sm transition-all duration-300 hover:shadow-[0_0_15px_3px] hover:shadow-white/20',
+                            'p-3 transition-all duration-300',
                             onEventClick && 'cursor-pointer',
-                            theme === 'tokyo-night' && 'rounded-lg bg-card/50 backdrop-blur-sm border border-border',
-                            theme === 'impact' && 'bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)]',
-                            theme === 'elegant' && 'rounded-lg bg-card/40 border border-border/30'
+                            theme === 'tokyo-night' && 'rounded-lg bg-card/50 backdrop-blur-sm border border-border hover:shadow-[0_0_15px_3px] hover:shadow-white/20',
+                            theme === 'impact' && 'bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-[0_0_15px_3px] hover:shadow-white/20',
+                            theme === 'elegant' && 'rounded-lg bg-card/40 hover:bg-card/60 border border-border/40 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.12)] transition-all duration-500'
                         )}
                     >
                         <div

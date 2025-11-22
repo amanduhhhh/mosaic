@@ -58,10 +58,10 @@ export function BarChart({
             animate={chartAnimate}
             transition={chartTransition}
             className={cn(
-                'p-4 transition-all duration-300 hover:shadow-[0_0_15px_3px] hover:shadow-white/20',
-                theme === 'tokyo-night' && 'rounded-lg bg-card/30 border border-border',
-                theme === 'impact' && 'bg-linear-to-br from-white to-slate-50',
-                theme === 'elegant' && 'rounded-lg bg-card/20 border border-border/30',
+                'p-4 transition-all duration-300',
+                theme === 'tokyo-night' && 'rounded-lg bg-card/30 border border-border hover:shadow-[0_0_15px_3px] hover:shadow-white/20',
+                theme === 'impact' && 'bg-linear-to-br from-white to-slate-50 hover:shadow-[0_0_15px_3px] hover:shadow-white/20',
+                theme === 'elegant' && 'rounded-md bg-card/40 border border-border/40 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.12)] duration-500',
                 className
             )}
         >

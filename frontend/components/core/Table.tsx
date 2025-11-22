@@ -69,10 +69,10 @@ export function Table<T extends Record<string, unknown>>({
             animate={chartAnimate}
             transition={chartTransition}
             className={cn(
-                'overflow-x-auto',
-                theme === 'tokyo-night' && 'rounded-lg bg-card/30 border border-border',
-                theme === 'impact' && 'border-2 border-black',
-                theme === 'elegant' && 'rounded-lg bg-card/20 border border-border/30',
+                'overflow-x-auto transition-all duration-300',
+                theme === 'tokyo-night' && 'rounded-lg bg-card/30 border border-border hover:shadow-[0_0_15px_3px] hover:shadow-white/20',
+                theme === 'impact' && 'border-2 border-black hover:shadow-[0_0_15px_3px] hover:shadow-white/20',
+                theme === 'elegant' && 'rounded-md bg-card/40 border border-border/40 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.12)] duration-500',
                 className
             )}
         >
