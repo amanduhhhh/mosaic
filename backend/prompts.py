@@ -12,7 +12,6 @@ def get_available_sources() -> list[str]:
 
 def build_planning_prompt(query: str) -> str:
     sources = get_available_sources()
-
     return f"""Analyze this query and plan the UI experience.
 
 Query: "{query}"
