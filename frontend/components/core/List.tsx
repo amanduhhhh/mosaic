@@ -63,10 +63,10 @@ export function List<T extends Record<string, unknown>>({
                             {ranked && (
                                 <div
                                     className={cn(
-                                        'shrink-0 text-white',
-                                        theme === 'tokyo-night' && 'text-2xl font-bold',
-                                        theme === 'impact' && 'text-2xl font-black',
-                                        theme === 'elegant' && 'text-xl font-serif'
+                                        'shrink-0',
+                                        theme === 'tokyo-night' && 'text-2xl font-bold text-foreground',
+                                        theme === 'impact' && 'text-2xl font-black text-muted-foreground',
+                                        theme === 'elegant' && 'text-xl font-serif text-muted-foreground'
                                     )}
                                 >
                                     {getRankIcon(index)}
@@ -87,8 +87,10 @@ export function List<T extends Record<string, unknown>>({
                                 {secondaryValue && (
                                     <div
                                         className={cn(
-                                            'text-sm text-white truncate',
-                                            theme === 'impact' && 'font-bold uppercase text-xs mt-0.5'
+                                            'text-sm truncate',
+                                            theme === 'tokyo-night' && 'text-foreground',
+                                            theme === 'impact' && 'font-bold uppercase text-xs mt-0.5 text-muted-foreground',
+                                            theme === 'elegant' && 'text-muted-foreground'
                                         )}
                                     >
                                         {String(secondaryValue ?? '')}
@@ -99,10 +101,10 @@ export function List<T extends Record<string, unknown>>({
                             {metaValue && (
                                 <div
                                     className={cn(
-                                        'shrink-0 text-sm text-white',
-                                        theme === 'tokyo-night' && 'font-mono',
-                                        theme === 'impact' && 'font-black text-xs',
-                                        theme === 'elegant' && 'font-sans'
+                                        'shrink-0 text-sm',
+                                        theme === 'tokyo-night' && 'font-mono text-foreground',
+                                        theme === 'impact' && 'font-black text-xs text-muted-foreground',
+                                        theme === 'elegant' && 'font-sans text-muted-foreground'
                                     )}
                                 >
                                     {String(metaValue)}
