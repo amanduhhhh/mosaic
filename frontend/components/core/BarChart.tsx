@@ -1,0 +1,142 @@
+'use client';
+
+import { useRef } from 'react';
+import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import { useThemeStore } from '@/store/useThemeStore';
+import type { ThemeName } from '@/components/types';
+import { Bar, BarChart as RechartsBarChart, CartesianGrid, XAxis } from 'recharts';
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+
+interface DataPoint {
+    label: string;
+    value: number;
+    [key: string]: string | number;
+}
+
+interface BarChartProps {
+    data: DataPoint[];
+    showGrid?: boolean;
+    showAxes?: boolean;
+    label?: string;
+    height?: number;
+    className?: string;
+    theme?: ThemeName;
+}
+
+export function BarChart({
+    data,
+    showGrid = true,
+    showAxes = true,
+    label,
+    height: containerHeight,
+    className,
+    theme: propTheme,
+}: BarChartProps) {
+    const { currentTheme } = useThemeStore();
+    const theme = propTheme || currentTheme;
+    const hasAnimated = useRef(false);
+
+    const shouldAnimate = !hasAnimated.current;
+    if (shouldAnimate) hasAnimated.current = true;
+
+    const config: ChartConfig = {
+        value: {
+            label: "Value",
+            color: theme === 'tokyo-night' ? 'var(--chart-1)' : 'var(--primary)',
+        },
+    };
+
+    return (
+        <motion.div
+            initial={shouldAnimate ? { opacity: 0, y: 8 } : false}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: theme === 'impact' ? 0.2 : 0.5 }}
+            className={cn(
+                'p-4 transition-all duration-300 hover:shadow-[0_0_15px_3px] hover:shadow-white/20',
+                theme === 'tokyo-night' && 'rounded-lg bg-card/30 border border-border',
+                theme === 'impact' && 'bg-linear-to-br from-white to-slate-50 border-2 border-primary',
+                theme === 'elegant' && 'rounded-lg bg-card/20 border border-border/30',
+                className
+            )}
+        >
+            {label && (
+                <h3
+                    className={cn(
+                        'mb-4',
+                        theme === 'tokyo-night' && 'text-lg font-bold text-foreground',
+                        theme === 'impact' && 'text-sm font-black uppercase tracking-widest',
+                        theme === 'elegant' && 'text-lg font-serif text-foreground'
+                    )}
+                >
+                    {label}
+                </h3>
+            )}
+
+            <div style={{ height: containerHeight ? containerHeight - 60 : 240 }}>
+                <ChartContainer config={config} className="w-full h-full">
+                    <RechartsBarChart
+                        data={data}
+                        margin={{
+                            left: 12,
+                            right: 12,
+                            top: 12,
+                            bottom: 12
+                        }}
+                    >
+                        <defs>
+                            {theme === 'tokyo-night' && (
+                                <linearGradient id="tokyoBarGradient" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={1} />
+                                    <stop offset="100%" stopColor="var(--chart-2)" stopOpacity={0.6} />
+                                </linearGradient>
+                            )}
+                        </defs>
+                        {showGrid && (
+                            <CartesianGrid 
+                                vertical={false}
+                                strokeDasharray={theme === 'impact' ? '0' : '3 3'}
+                                className={cn(
+                                    theme === 'tokyo-night' && 'stroke-border/30',
+                                    theme === 'impact' && 'stroke-primary/10',
+                                    theme === 'elegant' && 'stroke-border/20'
+                                )}
+                            />
+                        )}
+                        {showAxes && (
+                            <XAxis
+                                dataKey="label"
+                                tickLine={false}
+                                axisLine={false}
+                                tickMargin={8}
+                                tickFormatter={(value) => value.slice(0, 3)}
+                                className={cn(
+                                    theme === 'impact' && 'font-bold uppercase text-[10px]',
+                                    theme === 'elegant' && 'font-serif italic'
+                                )}
+                            />
+                        )}
+                        <ChartTooltip
+                            cursor={false}
+                            content={<ChartTooltipContent hideLabel />}
+                        />
+                        <Bar
+                            dataKey="value"
+                            radius={theme === 'impact' ? [0, 0, 0, 0] : [4, 4, 0, 0]}
+                            fill={
+                                theme === 'tokyo-night' ? 'url(#tokyoBarGradient)' :
+                                theme === 'impact' ? 'var(--primary)' :
+                                'var(--primary)'
+                            }
+                            className={cn(
+                                "transition-all duration-300",
+                                theme === 'impact' && "hover:fill-primary/80",
+                                theme === 'elegant' && "hover:fill-primary/80"
+                            )}
+                        />
+                    </RechartsBarChart>
+                </ChartContainer>
+            </div>
+        </motion.div>
+    );
+}

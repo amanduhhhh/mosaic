@@ -1,3 +1,30 @@
+import { Variants } from 'framer-motion';
+
+export type ThemeName = 'tokyo-night' | 'impact' | 'elegant';
+
+export interface ThemeConfig {
+  fonts: {
+    heading: string;
+    body: string;
+    accent?: string;
+  };
+  animations: {
+    card: Variants;
+    list: Variants;
+    chart: Variants;
+  };
+  styles: {
+    card: string;
+    cardHover: string;
+    border: string;
+  };
+}
+
+export interface BaseComponentProps {
+  className?: string;
+  theme?: ThemeName;
+}
+
 export interface ListItem {
   id: string | number;
   title?: string;
