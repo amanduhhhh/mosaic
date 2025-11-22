@@ -16,6 +16,11 @@ class Settings(BaseSettings):
     # Sports API (TheSportsDB - free tier available)
     sports_api_key: str = ""
 
+    # Strava API credentials
+    strava_client_id: str = ""
+    strava_client_secret: str = ""
+    strava_refresh_token: str = ""
+    clashroyale_api_key: str = ""
 
     # Clash Royale API key
     clashroyale_api_key: str = ""
