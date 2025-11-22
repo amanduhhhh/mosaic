@@ -2,22 +2,36 @@
 
 import { useRef } from 'react';
 import { motion } from 'framer-motion';
-import type { ComponentProps, ChartDataPoint } from '../types';
+import type { ComponentProps } from '../types';
 
-export function ChartPlaceholder({ data, onInteraction }: ComponentProps) {
-  const points = (data as ChartDataPoint[]) || [];
-  const maxValue = Math.max(...points.map(p => p.value), 1);
+interface ChartItem {
+  [key: string]: string | number | undefined;
+}
+
+export function ChartPlaceholder({ data, config, onInteraction }: ComponentProps) {
+  const items = (data as ChartItem[]) || [];
   const hasAnimated = useRef(false);
 
   const shouldAnimate = !hasAnimated.current;
   if (shouldAnimate) hasAnimated.current = true;
+
+  const xField = config.template?.x || config.template?.label || 'label';
+  const yField = config.template?.y || config.template?.value || 'value';
+
+  const points = items.map(item => ({
+    label: String(item[xField] ?? ''),
+    value: Number(item[yField] ?? 0),
+    original: item,
+  }));
+
+  const maxValue = Math.max(...points.map(p => p.value), 1);
 
   return (
     <motion.div
       initial={shouldAnimate ? { opacity: 0, y: 8 } : false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
-      className="rounded-xl bg-white p-4 shadow-sm dark:bg-zinc-800"
+      className="rounded bg-zinc-800 p-4"
     >
       <div className="flex h-48 items-end gap-2">
         {points.map((point, index) => {
@@ -40,7 +54,7 @@ export function ChartPlaceholder({ data, onInteraction }: ComponentProps) {
         {points.map((point, index) => (
           <div
             key={index}
-            className="flex-1 truncate text-center text-xs text-zinc-500 dark:text-zinc-400"
+            className="flex-1 truncate text-center text-xs text-zinc-400"
           >
             {point.label}
           </div>

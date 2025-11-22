@@ -302,7 +302,7 @@ async def generate_ui(request: GenerateRequest):
                 ],
                 stream=True,
                 max_tokens=4000,
-                api_key=settings.openai_api_key,
+                api_key=settings.anthropic_api_key,
             )
 
             async for chunk in response:
@@ -338,22 +338,39 @@ async def refine_ui(request: RefineRequest):
         try:
             yield f"event: data\ndata: {json.dumps(request.dataContext)}\n\n"
 
-            system_prompt = f"""You are refining an existing UI based on user feedback.
+            system_prompt = f"""You're editing a live app screen. Make the requested changes while preserving data bindings.
 
-Original Query: {request.query}
-
-Current HTML:
+## Current Screen
 {request.currentHtml}
 
-## Instructions
-- Output raw HTML only (no markdown, code blocks)
-- Use the same data context and component structure
-- Maintain <data-value> and <component-slot> syntax
-- Improve based on the user's refinement request
-- Keep the same overall intent but adjust presentation
-- Tailwind CSS, dark theme (bg-zinc-950)
+## Golden Rule: NO SYNTHETIC DATA
 
-Generate the refined UI:"""
+Never write literal numbers, names, or values. All data comes through:
+- `<data-value data-source="namespace::key"></data-value>`
+- `<component-slot type="..." data-source="namespace::key" ...>`
+
+If you write "87,234" or any actual data value, you've broken the screen.
+
+## Edit Rules
+- Output raw HTML only (no markdown, code fences)
+- Preserve all data-source bindings - move them, don't delete them
+- Same data sources - never invent new ones
+- Sharp edges only (rounded-sm or rounded, never rounded-xl/2xl/3xl)
+- Dark theme: bg-zinc-900/950, text-white/zinc-100
+
+## What to Change
+Respond to the user's edit request:
+- Layout: rearrange, resize, change grid structure
+- Style: colors, spacing, typography, accents
+- Emphasis: scale up/down, reposition
+- Flow: reorder the narrative, change the "hook"
+
+## What to Keep
+- All data-value and component-slot elements
+- Data bindings intact (namespace::key references)
+- The emotional intent unless explicitly changing it
+
+Think: tweaking a shipped app, not rebuilding."""
 
             response = await acompletion(
                 model=settings.model,
@@ -363,7 +380,7 @@ Generate the refined UI:"""
                 ],
                 stream=True,
                 max_tokens=4000,
-                api_key=settings.openai_api_key,
+                api_key=settings.anthropic_api_key,
             )
 
             async for chunk in response:
@@ -394,7 +411,7 @@ async def plan_and_classify(query: str) -> dict:
         model=settings.model,
         messages=[{"role": "user", "content": build_planning_prompt(query)}],
         max_tokens=300,
-        api_key=settings.openai_api_key,
+        api_key=settings.anthropic_api_key,
     )
 
     text = response.choices[0].message.content

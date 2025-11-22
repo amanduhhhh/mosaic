@@ -7,16 +7,18 @@ import { HybridRenderer } from '@/components/HybridRenderer';
 import type { InteractionPayload } from '@/components/types';
 
 const PRESETS = [
-  "Show me my year in music",
-  "Create a fitness journey dashboard",
-  "Visualize my reading progress this year",
-  "Display my travel adventures",
-  "Give me an overview of all my activities",
+  "How much music did I listen to this year?",
+  "What were my top songs and genres?",
+  "Show my fitness stats - workouts and calories",
+  "Where did I travel and for how long?",
+  "What books did I read this year?",
+  "Compare my music listening to my workouts",
 ];
 
 export default function GeneratePage() {
   const [query, setQuery] = useState('');
   const [refineQuery, setRefineQuery] = useState('');
+  const [isDataContextOpen, setIsDataContextOpen] = useState(false);
   const {
     isStreaming,
     dataContext,
@@ -164,11 +166,21 @@ export default function GeneratePage() {
       </div>
 
       {Object.keys(dataContext).length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-zinc-900 border-t border-zinc-800 p-4 max-h-48 overflow-auto">
-          <h3 className="text-xs font-medium text-zinc-400 mb-2">Data Context</h3>
-          <pre className="text-xs text-zinc-500 font-mono">
-            {JSON.stringify(dataContext, null, 2)}
-          </pre>
+        <div className="fixed bottom-0 left-0 right-0 bg-zinc-900 border-t border-zinc-800">
+          <button
+            onClick={() => setIsDataContextOpen(!isDataContextOpen)}
+            className="w-full p-3 flex items-center justify-between text-xs font-medium text-zinc-400 hover:text-zinc-300 transition-colors"
+          >
+            <span>Data Context ({Object.keys(dataContext).length} namespaces)</span>
+            <span className="text-zinc-600">{isDataContextOpen ? '▼' : '▲'}</span>
+          </button>
+          {isDataContextOpen && (
+            <div className="p-4 pt-0 max-h-64 overflow-auto">
+              <pre className="text-xs text-zinc-500 font-mono">
+                {JSON.stringify(dataContext, null, 2)}
+              </pre>
+            </div>
+          )}
         </div>
       )}
     </div>

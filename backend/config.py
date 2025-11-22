@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     openai_api_key: str
     litellm_log: str = "INFO"
     cors_origins: list[str] = ["http://localhost:3000"]
-    model: str = "gpt-4o"
+    model: str = "anthropic/claude-sonnet-4-20250514"
 
     spotify_client_id: str
     spotify_client_secret: str
