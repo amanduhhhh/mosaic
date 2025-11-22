@@ -1,0 +1,283 @@
+'use client';
+
+import React, { useEffect, useRef, useCallback, useState } from 'react';
+import { createRoot, Root } from 'react-dom/client';
+import DOMPurify from 'dompurify';
+import morphdom from 'morphdom';
+import { motion } from 'framer-motion';
+import { COMPONENT_REGISTRY } from './registry';
+import type {
+  ComponentProps,
+  DataContext,
+  HydrationLog,
+  InteractionPayload,
+} from './types';
+import { generateSlotId, resolveDataSource, parseConfig } from './utils';
+
+interface HybridRendererProps {
+  htmlContent: string;
+  dataContext: DataContext;
+  onInteraction: (type: string, payload: InteractionPayload) => void;
+  onLog?: (log: HydrationLog) => void;
+}
+
+interface SlotErrorBoundaryProps {
+  children: React.ReactNode;
+  onError: (error: Error) => void;
+}
+
+class SlotErrorBoundary extends React.Component<
+  SlotErrorBoundaryProps,
+  { hasError: boolean }
+> {
+  constructor(props: SlotErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(): { hasError: boolean } {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error): void {
+    this.props.onError(error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <div className="h-8" />;
+    }
+    return this.props.children;
+  }
+}
+
+const DOMPURIFY_CONFIG = {
+  ADD_TAGS: ['component-slot', 'data-value'],
+  ADD_ATTR: ['type', 'data-source', 'config', 'interaction', 'slot-id'],
+};
+
+export function HybridRenderer({
+  htmlContent,
+  dataContext,
+  onInteraction,
+  onLog,
+}: HybridRendererProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const rootsRef = useRef<Map<string, Root>>(new Map());
+  const mountedSlotsRef = useRef<Set<string>>(new Set());
+  const [isReady, setIsReady] = useState(false);
+
+  const onLogRef = useRef(onLog);
+  const onInteractionRef = useRef(onInteraction);
+  const dataContextRef = useRef(dataContext);
+
+  // Sync update dataContext ref before effects run
+  dataContextRef.current = dataContext;
+
+  useEffect(() => {
+    onLogRef.current = onLog;
+    onInteractionRef.current = onInteraction;
+  });
+
+  const log = useCallback((
+    stage: HydrationLog['stage'],
+    message: string,
+    data?: HydrationLog['data']
+  ) => {
+    onLogRef.current?.({
+      timestamp: Date.now(),
+      stage,
+      message,
+      data,
+    });
+  }, []);
+
+  const mountComponent = useCallback(
+    (slot: Element, slotId: string) => {
+      const componentType = slot.getAttribute('type');
+      if (!componentType) {
+        log('mount', 'Skipping slot: no component type specified');
+        return;
+      }
+
+      const Component = COMPONENT_REGISTRY[componentType];
+      if (!Component) {
+        log('mount', `Unknown component type: ${componentType}`);
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'h-8';
+        slot.replaceWith(emptyDiv);
+        return;
+      }
+
+      const dataSource = slot.getAttribute('data-source');
+      const data = resolveDataSource(dataContextRef.current, dataSource);
+      const config = parseConfig(slot.getAttribute('config'));
+      const interaction = slot.getAttribute('interaction');
+
+      log('resolve', `Data resolved for ${componentType}`, {
+        componentType,
+        dataResolved: data !== null,
+      });
+
+      const handleInteraction = (
+        type: string,
+        payload: Omit<InteractionPayload, 'componentType' | 'interaction'>
+      ) => {
+        onInteractionRef.current(type, {
+          componentType,
+          interaction,
+          ...payload,
+        });
+      };
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'hybrid-slot';
+      wrapper.setAttribute('data-slot-id', slotId);
+      slot.replaceWith(wrapper);
+
+      const root = createRoot(wrapper);
+      rootsRef.current.set(slotId, root);
+
+      const componentProps: ComponentProps = {
+        data,
+        config,
+        onInteraction: handleInteraction,
+      };
+
+      log('mount', `Mounting ${componentType}`, {
+        componentType,
+        dataResolved: data !== null,
+        props: componentProps,
+      });
+
+      root.render(
+        <SlotErrorBoundary onError={(error) => {
+          log('mount', `Error in ${componentType}: ${error.message}`);
+        }}>
+          <Component {...componentProps} />
+        </SlotErrorBoundary>
+      );
+    },
+    [log]
+  );
+
+  const cleanupRoots = useCallback(() => {
+    const roots = Array.from(rootsRef.current.values());
+    rootsRef.current.clear();
+    mountedSlotsRef.current.clear();
+
+    queueMicrotask(() => {
+      roots.forEach((root) => {
+        try {
+          root.unmount();
+        } catch {
+          // Ignore - already unmounted
+        }
+      });
+    });
+  }, []);
+
+  useEffect(() => {
+    return () => cleanupRoots();
+  }, [cleanupRoots]);
+
+  useEffect(() => {
+    if (!htmlContent) {
+      cleanupRoots();
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setIsReady(false);
+    }
+  }, [htmlContent, cleanupRoots]);
+
+  useEffect(() => {
+    if (!containerRef.current || !htmlContent) return;
+
+    log('parse', 'Processing HTML');
+    log('sanitize', 'Sanitizing HTML');
+
+    const sanitized = DOMPurify.sanitize(htmlContent, DOMPURIFY_CONFIG);
+    const container = containerRef.current;
+
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = sanitized;
+
+    const existingWrapperIds = new Set<string>();
+    container.querySelectorAll('.hybrid-slot[data-slot-id]').forEach(wrapper => {
+      const id = wrapper.getAttribute('data-slot-id');
+      if (id) existingWrapperIds.add(id);
+    });
+
+    // Convert already-mounted component-slots to placeholders so morphdom preserves React roots
+    tempDiv.querySelectorAll('component-slot').forEach((slot) => {
+      const slotId = generateSlotId(slot);
+      if (existingWrapperIds.has(slotId)) {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'hybrid-slot';
+        placeholder.setAttribute('data-slot-id', slotId);
+        slot.replaceWith(placeholder);
+      }
+    });
+
+    morphdom(container, tempDiv, {
+      childrenOnly: true,
+      getNodeKey: (node) => {
+        if (node.nodeType !== 1) return undefined;
+        const el = node as Element;
+        if (el.hasAttribute('data-slot-id')) {
+          return el.getAttribute('data-slot-id');
+        }
+        return undefined;
+      },
+      onBeforeElUpdated: (fromEl) => {
+        return !fromEl.hasAttribute('data-slot-id');
+      },
+      onBeforeNodeDiscarded: (node) => {
+        return !(node instanceof Element && node.hasAttribute('data-slot-id'));
+      },
+    });
+
+    container.querySelectorAll('data-value[data-source]').forEach((el) => {
+      const source = el.getAttribute('data-source');
+      if (!source) return;
+
+      const parts = source.split('::');
+      if (parts.length !== 2) return;
+
+      const [namespace, key] = parts;
+      const namespaceData = dataContextRef.current[namespace];
+      if (!namespaceData) return;
+
+      const value = namespaceData[key];
+      if (value !== undefined && value !== null && typeof value !== 'object') {
+        el.textContent = String(value);
+        log('resolve', `Set ${source} = ${value}`);
+      }
+    });
+
+    container.querySelectorAll('component-slot').forEach((slot) => {
+      const slotId = generateSlotId(slot);
+      if (!mountedSlotsRef.current.has(slotId)) {
+        mountComponent(slot, slotId);
+        mountedSlotsRef.current.add(slotId);
+      }
+    });
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsReady(true);
+
+    log('detect', `Processing complete, ${mountedSlotsRef.current.size} slot(s) mounted`, {
+      slotCount: mountedSlotsRef.current.size,
+    });
+
+  }, [htmlContent, log, mountComponent]);
+
+  return (
+    <motion.div
+      ref={containerRef}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: isReady ? 1 : 0 }}
+      transition={{ duration: 0.2 }}
+      className="hybrid-renderer"
+    />
+  );
+}

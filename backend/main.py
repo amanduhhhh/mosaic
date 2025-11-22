@@ -7,8 +7,13 @@ import json
 from typing import AsyncGenerator, Optional
 
 from config import get_settings
-from data import MOCK_DATA, COMPONENT_SCHEMAS, get_spotify_data
-from utils import extract_complete_element, get_data
+from data import MOCK_DATA, get_spotify_data
+from utils import get_data
+from prompts import (
+    build_planning_prompt,
+    build_ui_system_prompt,
+    build_ui_user_prompt,
+)
 from integrations.spotify import SpotifyDataFetcher
 from integrations.stocks import StocksDataFetcher
 from integrations.sports import SportsDataFetcher
@@ -38,26 +43,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-UI_SYSTEM_PROMPT = f"""Generate beautiful UIs using HTML/CSS and custom components.
-
-Components: {json.dumps(COMPONENT_SCHEMAS)}
-
-Rules:
-- Use HTML/CSS for layouts (divs, grids, gradients)
-- Use <component-slot type="..." data-source="..." config='{{...}}' interaction="smart" /> for data viz
-- Dark gradients, generous spacing, bold typography
-
-Example:
-<div style="background: linear-gradient(135deg, #667eea, #764ba2); padding: 40px; border-radius: 16px;">
-  <h1 style="color: white; font-size: 48px;">Your 2024</h1>
-  <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;">
-    <component-slot type="MetricCard" data-source="reading::books_read"
-                    config='{{"label": "Books", "icon": "📚", "trend": "+12"}}'
-                    interaction="smart" />
-  </div>
-</div>"""
-
 
 class GenerateRequest(BaseModel):
     query: str
@@ -328,40 +313,30 @@ async def sports_summary(teams: str = Query(..., description="Comma-separated te
 async def generate_ui(request: GenerateRequest):
     async def event_stream() -> AsyncGenerator[str, None]:
         try:
-            data_sources = await plan_data(request.query)
-            yield f"event: data-plan\ndata: {json.dumps(data_sources)}\n\n"
+            plan = await plan_and_classify(request.query)
+            data_context = get_data(plan["sources"], MOCK_DATA)
+            intent = plan.get("intent", "")
+            approach = plan.get("approach", "")
 
-            data_context = get_data(data_sources["sources"], MOCK_DATA)
-            yield f"event: data-ready\ndata: {json.dumps(list(data_context.keys()))}\n\n"
+            yield f"event: data\ndata: {json.dumps(data_context)}\n\n"
 
             response = await acompletion(
-                model="anthropic/claude-sonnet-4-20250514",
-                messages=[{
-                    "role": "user",
-                    "content": f"{request.query}\n\nData: {json.dumps(data_context)}"
-                }],
-                system=UI_SYSTEM_PROMPT,
+                model=settings.model,
+                messages=[
+                    {"role": "system", "content": build_ui_system_prompt(intent, approach)},
+                    {"role": "user", "content": build_ui_user_prompt(request.query, data_context)}
+                ],
                 stream=True,
                 max_tokens=4000,
-                api_key=settings.anthropic_api_key
+                api_key=settings.openai_api_key
             )
 
-            buffer = ""
             async for chunk in response:
                 if hasattr(chunk.choices[0].delta, 'content') and chunk.choices[0].delta.content:
-                    buffer += chunk.choices[0].delta.content
+                    content = chunk.choices[0].delta.content
+                    yield f"event: ui\ndata: {json.dumps({'content': content})}\n\n"
 
-                    while True:
-                        complete = extract_complete_element(buffer)
-                        if not complete:
-                            break
-                        yield f"event: ui-chunk\ndata: {json.dumps({'content': complete})}\n\n"
-                        buffer = buffer[len(complete):]
-
-            if buffer.strip():
-                yield f"event: ui-chunk\ndata: {json.dumps({'content': buffer})}\n\n"
-
-            yield f"event: complete\ndata: {{}}\n\n"
+            yield f"event: done\ndata: {{}}\n\n"
 
         except Exception as e:
             yield f"event: error\ndata: {json.dumps({'message': str(e)})}\n\n"
@@ -376,19 +351,15 @@ async def generate_ui(request: GenerateRequest):
     )
 
 
-async def plan_data(query: str) -> dict:
+async def plan_and_classify(query: str) -> dict:
     response = await acompletion(
-        model="anthropic/claude-sonnet-4-20250514",
+        model=settings.model,
         messages=[{
             "role": "user",
-            "content": f"""Query: "{query}"
-
-Available: music::top_songs, travel::cities, fitness::workouts, reading::books_read
-
-Return JSON only: {{"sources": ["source1", "source2"]}}"""
+            "content": build_planning_prompt(query)
         }],
         max_tokens=300,
-        api_key=settings.anthropic_api_key
+        api_key=settings.openai_api_key
     )
 
     text = response.choices[0].message.content

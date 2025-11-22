@@ -108,20 +108,29 @@ if spotify_data:
 # Sports data can be fetched on-demand via API endpoints
 
 COMPONENT_SCHEMAS = {
-    "MetricCard": {
-        "data": {"value": "number", "label": "string", "icon": "string"},
-        "config": {"trend": "string", "color": "string"}
+    "List": {
+        "description": "Displays a list of items with primary/secondary text",
+        "data": [{"id": "string|number", "title": "string", "subtitle": "string"}],
+        "config": {"template": {"primary": "field_name", "secondary": "field_name"}}
     },
-    "BarChart": {
+    "Card": {
+        "description": "Single card with title, description, optional image",
+        "data": {"title": "string", "description": "string", "image": "url"},
+        "config": {}
+    },
+    "Chart": {
+        "description": "Bar chart for numerical data",
         "data": [{"label": "string", "value": "number"}],
-        "config": {"orientation": "vertical|horizontal", "color": "string"}
+        "config": {}
+    },
+    "Grid": {
+        "description": "Grid of items with images",
+        "data": [{"id": "string|number", "title": "string", "image": "url"}],
+        "config": {"columns": "number (default 3)"}
     },
     "Timeline": {
-        "data": [{"date": "string", "title": "string"}],
-        "config": {"style": "minimal|detailed"}
-    },
-    "Map": {
-        "data": [{"name": "string", "lat": "number", "lng": "number"}],
-        "config": {"style": "dark|light"}
+        "description": "Vertical timeline of events",
+        "data": [{"id": "string|number", "title": "string", "description": "string", "timestamp": "string"}],
+        "config": {}
     }
 }
