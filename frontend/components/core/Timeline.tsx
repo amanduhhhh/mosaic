@@ -109,7 +109,7 @@ export function Timeline({
                             'p-3 transition-all duration-300',
                             onEventClick && 'cursor-pointer',
                             theme === 'tokyo-night' && 'rounded-lg bg-card/50 backdrop-blur-sm border border-border hover:shadow-[0_0_15px_3px] hover:shadow-white/20',
-                            theme === 'impact' && 'bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-[0_0_15px_3px] hover:shadow-white/20',
+                            theme === 'impact' && 'bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-[4px_4px_2px_0px_rgba(0,0,0,0.08)] hover:-translate-y-0.5',
                             theme === 'elegant' && 'rounded-lg bg-card/40 hover:bg-card/60 border border-border/40 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.12)] transition-all duration-500'
                         )}
                     >

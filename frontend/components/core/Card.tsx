@@ -41,7 +41,7 @@ export function Card({
     const baseStyles = cn(
         themeConfig.styles.card,
         onClick && themeConfig.styles.cardHover,
-        theme !== 'elegant' && 'hover:shadow-[0_0_15px_3px] hover:shadow-white/20',
+        theme === 'tokyo-night' && 'hover:shadow-[0_0_15px_3px] hover:shadow-white/20',
         'p-4 transition-all duration-300',
         className
     );

@@ -23,7 +23,7 @@ export const THEMES: Record<ThemeName, ThemeConfig> = {
             },
         },
         styles: {
-            card: 'bg-card/50 backdrop-blur-sm border-border rounded-xl',
+            card: 'bg-card/50 backdrop-blur-sm border border-border rounded-xl',
             cardHover: 'hover:bg-card/80 transition-colors cursor-pointer group relative overflow-hidden',
             border: 'border',
         },
@@ -49,7 +49,7 @@ export const THEMES: Record<ThemeName, ThemeConfig> = {
         },
         styles: {
             card: 'bg-linear-to-br from-white to-slate-50 border-l-4 border-primary shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)]',
-            cardHover: 'hover:shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all group relative',
+            cardHover: 'hover:shadow-[0_12px_30px_-6px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all group relative',
             border: 'border-2',
         },
     },
