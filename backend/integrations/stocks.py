@@ -57,9 +57,9 @@ class StocksDataFetcher:
                 )
 
             return {
-                "portfolio": portfolio,
-                "total_value": round(total, 2),
-                "last_updated": datetime.now().isoformat(),
+                "portfolio_holdings": portfolio,
+                "portfolio_total_value": round(total, 2),
+                "portfolio_last_updated": datetime.now().isoformat(),
             }
         except Exception as e:
             logger.error(f"Failed to fetch portfolio data: {e}")
@@ -99,10 +99,10 @@ class StocksDataFetcher:
             trending.sort(key=lambda x: x["change"], reverse=True)
 
             return {
-                "indices": indices,
-                "top_gainers": [s for s in trending if s["change"] > 0][:3],
-                "top_losers": [s for s in trending if s["change"] < 0][:3],
-                "last_updated": datetime.now().isoformat(),
+                "market_indices": indices,
+                "market_top_gainers": [s for s in trending if s["change"] > 0][:3],
+                "market_top_losers": [s for s in trending if s["change"] < 0][:3],
+                "market_last_updated": datetime.now().isoformat(),
             }
         except Exception as e:
             logger.error(f"Failed to fetch market trends: {e}")
@@ -149,8 +149,8 @@ class StocksDataFetcher:
                 })
 
             return {
-                "stocks": stocks,
-                "last_updated": datetime.now().isoformat(),
+                "stock_data": stocks,
+                "stock_last_updated": datetime.now().isoformat(),
             }
         except Exception as e:
             logger.error(f"Failed to fetch stock info for {symbols}: {e}")

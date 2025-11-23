@@ -70,7 +70,22 @@ def get_available_sources() -> list[str]:
 
 def get_component_rules() -> str:
     """Shared component rules for all UI generation endpoints"""
-    return f"""## How Data Binding Works
+    return f"""## Color & Theming Philosophy
+
+**The app has a theme system, but you can break rules for visual impact.**
+
+**Base colors (use for structure):**
+- Background: `bg-background`, Cards: `bg-card`, Text: `text-foreground`/`text-muted-foreground`
+- CRITICAL: ALWAYS use `text-foreground` for main text to ensure visibility across all themes (tokyo-night, impact, elegant, neobrutalism)
+
+**Accent colors (use for drama):**
+- Add explicit colors ON TOP for visual hierarchy: `bg-violet-500/10`, `border-emerald-500/30`, `shadow-rose-500/20`
+- Gradients for emphasis: `bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20`
+
+**80/20 Rule:** 80% semantic (themeable) + 20% explicit accents (visual drama).
+Don't be boring - use accents liberally for hero sections, featured components, and emphasis.
+
+## How Data Binding Works
 
 The frontend has a component registry that renders data. You place containers; the system fills them.
 
@@ -78,11 +93,10 @@ The frontend has a component registry that renders data. You place containers; t
 Data sources use the format `namespace::path` where path can include array indices and property access.
 
 **VALID examples:**
-- `sports::teams` - references the teams array
-- `sports::teams[0].schedule` - first team's schedule array
-- `sports::teams[0].wins` - first team's wins value
-- `music::top_songs` - references top_songs array
-- `music::total_minutes` - references a single value
+- `namespace::items` - references the items array
+- `namespace::items[0].details` - first item's details array
+- `namespace::items[0].count` - first item's count value
+- `namespace::total` - references a single value
 
 Use array indexing `[0]` and dot notation `.field` to access nested data.
 
@@ -97,16 +111,16 @@ For **ONLY** primitive values (numbers, strings, booleans). The element's textCo
 
 ```html
 <p class="text-8xl font-black text-white">
-  <data-value data-source="music::total_minutes"></data-value>
+  <data-value data-source="namespace::total_value"></data-value>
 </p>
-<p class="text-zinc-400">
-  <data-value data-source="fitness::workouts"></data-value> workouts completed
+<p class="text-muted-foreground">
+  <data-value data-source="namespace::count"></data-value> items completed
 </p>
 ```
 
-Fallback example (if music::top_songs is an array, this shows its length):
+Fallback example (if namespace::items is an array, this shows its length):
 ```html
-<p><data-value data-source="music::top_songs"></data-value> songs</p>
+<p><data-value data-source="namespace::items"></data-value> items</p>
 ```
 
 ### Arrays/Objects: component-slot
@@ -116,9 +130,9 @@ List example (map array fields to display template):
 ```html
 <component-slot
   type="List"
-  data-source="music::top_songs"
-  config='{{"template":{{"primary":"title","secondary":"artist"}}}}'
-  click-prompt="Dive into this track - show play history, audio features, and similar songs"
+  data-source="namespace::items"
+  config='{{"template":{{"primary":"name","secondary":"description"}}}}'
+  click-prompt="Show detailed breakdown and related items"
 ></component-slot>
 ```
 
@@ -127,7 +141,7 @@ Chart example (ONLY for arrays of objects with numeric fields):
 <component-slot
   type="Chart"
   data-source="fitness::by_type"
-  config='{{"template":{{"x":"type","y":"calories"}}}}'
+  config='{{"template":{{"x":"type","y":"calories","primary":"Calories by Workout"}},"layout":"bar"}}'
   click-prompt="Break down this workout type - show trends over time and personal records"
 ></component-slot>
 ```
@@ -146,11 +160,12 @@ Timeline example (ONLY for chronological/dated events):
 ```html
 <component-slot
   type="Timeline"
-  data-source="fitness::recent_activities"
-  config='{{"template":{{"title":"name","description":"date"}}}}'
-  click-prompt="Show workout details - distance, pace, and heart rate data"
+  data-source="namespace::events"
+  config='{{"template":{{"title":"event_name","description":"location","timestamp":"date"}},"orientation":"vertical"}}'
+  click-prompt="Show event details"
 ></component-slot>
 ```
+The template maps YOUR data fields to Timeline's display. Always check the data context for actual field names.
 
 Table example (tabular data with multiple columns):
 ```html
@@ -162,11 +177,31 @@ Table example (tabular data with multiple columns):
 ></component-slot>
 ```
 
+Vinyl example (music-only - visually striking, use for featured song/album):
+```html
+<component-slot
+  type="Vinyl"
+  data-source="namespace::items[0]"
+  config='{{"template":{{"primary":"name","secondary":"category"}},"label":"Featured"}}'
+  click-prompt="Show detailed analysis and related content"
+></component-slot>
+```
+
+Calendar example (for events/activities with dates):
+```html
+<component-slot
+  type="Calendar"
+  data-source="fitness::recent_activities"
+  config='{{}}'
+  click-prompt="Show activity details for this date"
+></component-slot>
+```
+
 Clickable example (interactive buttons - ALWAYS use this, never raw button tags):
 ```html
 <component-slot
   type="Clickable"
-  config='{{"label":"View Details","class":"px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"}}'
+  config='{{"label":"View Details","class":"px-4 py-2 bg-primary text-primary-foreground rounded transition-colors"}}'
   click-prompt="Show detailed breakdown of this metric"
 ></component-slot>
 ```
@@ -175,7 +210,14 @@ The `config.template` maps the component's display fields to your data's field n
 
 For interactive elements, add `click-prompt` describing what happens when clicked. Write from user perspective ("Show me...", "Dive into...", "Break down..."). Omit for non-interactive elements.
 
-**CRITICAL: For buttons/CTAs**, ALWAYS use the Clickable component. NEVER use raw `<button>` tags.
+**CRITICAL RULES:**
+- **For buttons/CTAs**: ALWAYS use the Clickable component. NEVER use raw `<button>` tags.
+- **For music**: USE Vinyl component - it's visually prominent (limit 1 per view, takes significant space)
+- **For dated events**: USE Calendar component when you have date fields - creates beautiful date-based layout
+- **For ranked/ordered data**: USE List with `"layout":"ranked"` - numbered lists look great
+- **For stats/metrics**: USE Card component with proper variant (metric/stat)
+
+These components are BEAUTIFUL. Use them liberally - they make the UI feel premium and polished.
 
 ## Component Registry
 
@@ -183,17 +225,17 @@ For interactive elements, add `click-prompt` describing what happens when clicke
 
 ## Golden Rule: NO SYNTHETIC DATA
 
-Never write literal values. If you write "87,234" or "Blinding Lights", you've broken the binding.
+Never write literal values. If you write hardcoded numbers or names, you've broken the binding.
 
-Wrong: `<p>87,234 minutes</p>`
-Right: `<p><data-value data-source="music::total_minutes"></data-value> minutes</p>`
+Wrong: `<p>87,234 items</p>`
+Right: `<p><data-value data-source="namespace::total"></data-value> items</p>`
 
-Wrong: `<span>Blinding Lights by The Weeknd</span>`
+Wrong: `<span>Hardcoded Item Name</span>`
 Right: Use a List component-slot with the array data-source
 
-Wrong: `<data-value data-source="music::top_artists" data-transform="length"></data-value>`
-Right: `<data-value data-source="music::top_artists"></data-value>` (will fallback to showing length)
-Better: Backend provides explicit count like `music::artist_count`
+Wrong: `<data-value data-source="namespace::items" data-transform="length"></data-value>`
+Right: `<data-value data-source="namespace::items"></data-value>` (will fallback to showing length)
+Better: Backend provides explicit count like `namespace::item_count`
 
 ## Chart Component: Critical Rules
 
@@ -202,16 +244,17 @@ Better: Backend provides explicit count like `music::artist_count`
 ✅ CORRECT Chart usage (data is array of objects with numeric fields):
 ```html
 <component-slot type="Chart" data-source="fitness::by_type" 
-  config='{{"template":{{"x":"type","y":"calories"}}}}'></component-slot>
+  config='{{"template":{{"x":"type","y":"calories"}},"layout":"bar"}}'></component-slot>
 ```
 Example data: `[{{"type": "Running", "calories": 12300}}, {{"type": "Cycling", "calories": 8400}}]`
+The adapter maps `type` → label and `calories` → value for the chart.
 
 ❌ WRONG Chart usage (data is simple string array):
 ```html
-<component-slot type="Chart" data-source="music::top_genres" 
-  config='{{"template":{{"x":"genre","y":"percentage"}}}}'></component-slot>
+<component-slot type="Chart" data-source="namespace::categories" 
+  config='{{"template":{{"x":"category","y":"percentage"}}}}'></component-slot>
 ```
-Example data: `["Pop", "Electronic", "Hip-Hop"]` - No "genre" or "percentage" fields!
+Example data: `["Category A", "Category B", "Category C"]` - No "category" or "percentage" fields!
 This will FAIL because the data doesn't have the fields you're trying to map.
 
 **If you have a simple array (strings, numbers, or simple objects), use List or Table instead.**
@@ -220,8 +263,9 @@ This will FAIL because the data doesn't have the fields you're trying to map.
 
 - NEVER use fixed positioning (fixed) - layouts must be in flow
 - NEVER use HTML comments in your output (no `<!-- comment -->`)
-- Use only Tailwind utility classes
-- Dark theme: bg-zinc-950, text-white
+- AVOID borders on cards (no `border border-border`) - use subtle backgrounds and shadows instead
+- Use Tailwind CSS classes available in the CDN (no custom CSS, no arbitrary values beyond standard Tailwind)
+- Use semantic theme classes: bg-background, text-foreground, bg-card
 - Sharp edges: rounded or rounded-sm only (never rounded-xl/2xl/3xl)"""
 
 
@@ -248,19 +292,21 @@ Approach: {approach}
 
 ## Design Philosophy
 
-Imagine you're designing a real app for this exact use case. What would Spotify Wrapped look like? What would a fantasy sports app look like? What would Robinhood's portfolio view look like?
-
 Design like you're building a REAL product. Not a demo. Not a prototype. A shipped app that millions use.
+
+Match the design to the data domain - let the content guide the aesthetics.
 
 GO ABSOLUTELY WILD. Be creative. Be degen. Make it memorable.
 
 This is NOT a boring dashboard. This is an experience. Think:
 - Dramatic visual hierarchy that slaps
 - Unexpected layouts that surprise
-- Bold color choices that pop
+- Bold accent overlays that pop (violet, emerald, rose glows)
 - Typography that makes a statement
 - Animations and hover states everywhere
 - The kind of UI that makes people screenshot and share
+
+**Use the beautiful components:** Vinyl cards, ranked Lists, Charts, Calendar - they're designed to impress.
 
 The ONLY rule: Don't make up data. Everything else is fair game.
 
@@ -268,11 +314,11 @@ The ONLY rule: Don't make up data. Everything else is fair game.
 
 Make the UI feel like it LIVES in its domain. Don't just display data - create a vibe:
 
-- **Sports/Basketball**: Scoreboard energy, locker room aesthetics, stadium lights, crowd roar vibes. Make it feel like courtside seats.
-- **Music/Spotify**: Album art grids, vinyl spinning vibes, concert poster energy, equalizer aesthetics, late night listening mood
-- **Stocks/Finance**: Bloomberg terminal on steroids, ticker tape chaos, green candles to the moon, trading floor energy
-- **Fitness/Strava**: Race bib aesthetics, finish line energy, sweat and glory vibes, personal records that hit different
-- **Gaming/Clash**: Legendary card reveals, arena battle energy, trophy case flex, clash royale chest opening vibes
+- **Sports**: Scoreboard energy, locker room aesthetics, stadium lights, crowd roar vibes. Make it feel like courtside seats.
+- **Music**: Album art grids, vinyl spinning vibes, concert poster energy, equalizer aesthetics, late night listening mood
+- **Stocks/Finance**: Bloomberg terminal energy, ticker tape chaos, green candles to the moon, trading floor vibes
+- **Fitness**: Race bib aesthetics, finish line energy, sweat and glory vibes, personal records that hit different
+- **Gaming**: Legendary reveals, arena battle energy, trophy case flex, competitive leaderboard vibes
 
 A music screen should make you want to put on headphones. A sports screen should make you want to yell at the TV. A stocks screen should make you feel like a degen trader.
 
@@ -288,29 +334,34 @@ A music screen should make you want to put on headphones. A sports screen should
 
 ### Typography & Hierarchy
 - Hero numbers: text-7xl to text-9xl font-black (make them impossible to ignore)
-- Supporting text: text-xs uppercase tracking-widest text-zinc-500
+- Supporting text: text-xs uppercase tracking-widest text-muted-foreground
 - Scale contrast is everything - tiny labels next to massive numbers
+- Use text-foreground for main text, text-muted-foreground for secondary
 
 ### Animation & Motion (Tailwind)
 Add life with subtle animations:
 - hover:scale-[1.02] transition-transform duration-200 (cards that breathe)
-- hover:bg-zinc-800 transition-colors (responsive feedback)
+- hover:bg-card/80 transition-colors (responsive feedback)
 - hover:translate-x-1 (list items that nudge)
 - animate-pulse on accent elements (subtle attention)
 - group-hover:opacity-100 for reveal effects
 
-### Color & Energy
-- Dark canvas: bg-zinc-950 (true black feel)
-- Accent gradients: bg-gradient-to-br from-violet-500 to-fuchsia-500
-- Glows: shadow-lg shadow-violet-500/20 (depth and warmth)
-- Semi-transparent accents: bg-emerald-500/10 border-emerald-500/30
-- One vibrant accent per screen (violet, emerald, amber, rose, cyan)
 
-### Containers & Depth
-- Cards: bg-zinc-900/80 backdrop-blur-sm border border-zinc-800/50
-- Hover states: hover:border-zinc-700 hover:bg-zinc-800/80
-- Subtle shadows: shadow-xl shadow-black/20
-- Sharp edges: rounded or rounded-sm only
+### Containers & Layout  
+- Cards: bg-card rounded p-6 (AVOID BORDERS - use subtle backgrounds instead)
+- CRITICAL: Always add padding INSIDE cards (p-4 to p-6) - content should never touch edges
+- Hover states: hover:bg-card/80 transition-colors
+- Sections: Use grid/flex with gap-4 to gap-8
+- Padding: p-4 to p-8 for sections, p-3 to p-6 for cards
+
+### Spacing & Rhythm
+- add generous vertical spacing between sections (e.g. mb-8)
+- Between major sections use space-y-8 or individual mb-10 to mb-16
+- Between related items: space-y-4 or mb-4 to mb-6
+- Grid gaps: gap-6 for cards, gap-4 for smaller items
+- Top-level wrapper: px-6 py-8 (generous padding around entire UI)
+- Use margin-bottom liberally - cramped UI looks cheap and unprofessional
+- Give content room to breathe - white space is good design
 
 ### Layout: Mobile-App Feel
 - Full-bleed hero sections (no padding on top element)
@@ -322,8 +373,8 @@ Add life with subtle animations:
 ### Micro-interactions
 Every interactive element should respond:
 ```html
-<div class="group cursor-pointer bg-zinc-900 p-4 rounded transition-all duration-200 hover:bg-zinc-800 hover:scale-[1.01] active:scale-[0.99]">
-  <p class="text-white group-hover:text-violet-300 transition-colors">...</p>
+<div class="group cursor-pointer bg-card p-4 rounded transition-all duration-200 hover:bg-card/80 hover:scale-[1.01] active:scale-[0.99]">
+  <p class="text-foreground group-hover:text-primary transition-colors">...</p>
 </div>
 ```
 
@@ -341,11 +392,12 @@ Every interactive element should respond:
 
 Must:
 1. Start with `<div class="...">` - no html/head/body
-2. Tailwind CSS only
+2. Tailwind CSS CDN is loaded - use standard Tailwind classes (no custom CSS, no arbitrary values beyond what's in Tailwind CDN). Prefer semantic classes (bg-background, text-foreground, bg-card)
 3. Use ALL data sources from context
 4. Multiple component-slots (3-4+)
 5. Animation/transition classes on interactive elements
-6. At least one bold accent color with glow/gradient
+6. Use Vinyl component for featured music items (limit 1 per view)
+7. Use Calendar component for dated events/activities when appropriate
 
 Must NOT:
 - Write literal data values
@@ -356,51 +408,51 @@ Must NOT:
 - Create static, hover-less layouts
 - Use HTML comments (no `<!-- -->` in output)
 - Use fixed or absolute positioning
+- Replace semantic base colors (always use bg-background, bg-card as foundation)
 
 ## Full Example
 
 ```html
-<div class="min-h-screen bg-zinc-950 p-6">
+<div class="min-h-screen bg-background p-6">
   <div class="mb-12">
-    <p class="text-xs uppercase tracking-widest text-zinc-600 mb-2">This Year</p>
-    <p class="text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-400 leading-none">
-      <data-value data-source="music::total_minutes"></data-value>
+    <p class="text-xs uppercase tracking-widest text-muted-foreground mb-2">Overview</p>
+    <p class="text-8xl font-black text-foreground leading-none">
+      <data-value data-source="namespace::total_value"></data-value>
     </p>
-    <p class="text-lg text-zinc-500 mt-1">minutes of music</p>
+    <p class="text-lg text-muted-foreground mt-1">items tracked</p>
   </div>
 
-  <div class="grid grid-cols-3 gap-4 mb-8">
-    <div class="col-span-2 bg-zinc-900/80 backdrop-blur-sm border border-zinc-800/50 p-5 rounded transition-all duration-200 hover:border-zinc-700 hover:shadow-xl hover:shadow-black/20">
-      <p class="text-xs uppercase tracking-widest text-zinc-500 mb-4">Top Tracks</p>
+  <div class="grid grid-cols-3 gap-6 mb-8">
+    <div class="col-span-2 bg-card p-5 rounded transition-all hover:bg-card/80">
+      <p class="text-xs uppercase tracking-widest text-muted-foreground mb-4">Top Items</p>
       <component-slot
         type="List"
-        data-source="music::top_songs"
-        config='{{"template":{{"primary":"title","secondary":"artist"}}}}'
-        click-prompt="Dive into this track - show play history and similar songs"
+        data-source="namespace::items"
+        config='{{"template":{{"primary":"name","secondary":"category","meta":"count"}},"layout":"ranked"}}'
+        click-prompt="Show detailed breakdown and analysis"
       ></component-slot>
     </div>
 
-    <div class="bg-gradient-to-br from-violet-500/10 to-fuchsia-500/10 border border-violet-500/30 p-5 rounded shadow-lg shadow-violet-500/10 transition-all duration-200 hover:shadow-violet-500/20 hover:border-violet-500/50">
-      <p class="text-xs uppercase tracking-widest text-violet-400 mb-4">Activity</p>
+    <div class="bg-gradient-to-br from-violet-500/10 to-fuchsia-500/10 p-5 rounded shadow-lg">
       <component-slot
-        type="Chart"
-        data-source="fitness::by_type"
-        config='{{"template":{{"x":"type","y":"calories"}}}}'
-        click-prompt="Break down this workout - show trends and records"
+        type="Vinyl"
+        data-source="namespace::items[0]"
+        config='{{"template":{{"primary":"name","secondary":"category"}},"label":"Featured"}}'
+        click-prompt="Show detailed analysis"
       ></component-slot>
     </div>
   </div>
 
-  <div class="space-y-2">
-    <component-slot
-      type="Timeline"
-      data-source="reading::top_books"
-      config='{{"template":{{"title":"title","description":"author"}}}}'
-      click-prompt="Show book details - progress and highlights"
-    ></component-slot>
-  </div>
+  <component-slot
+    type="Timeline"
+    data-source="namespace::events"
+    config='{{"template":{{"title":"name","description":"date"}}}}'
+    click-prompt="Show event details"
+  ></component-slot>
 </div>
 ```
+
+Note: Featured item uses gradient background for visual emphasis while maintaining semantic bg-card base.
 
 Output raw HTML now."""
 
@@ -439,36 +491,32 @@ VERY IMPORTANT: Output ONLY raw HTML. No markdown. No code fences. No ```html.
 
 ### Typography & Hierarchy
 - Hero numbers: text-7xl to text-9xl font-black (make them impossible to ignore)
-- Supporting text: text-xs uppercase tracking-widest text-zinc-500
+- Supporting text: text-xs uppercase tracking-widest text-muted-foreground
 - Scale contrast is everything - tiny labels next to massive numbers
+- Use text-foreground for main text, text-muted-foreground for secondary
 
 ### Animation & Motion (Tailwind)
 Add life with subtle animations:
 - hover:scale-[1.02] transition-transform duration-200 (cards that breathe)
-- hover:bg-zinc-800 transition-colors (responsive feedback)
+- hover:bg-card/80 transition-colors (responsive feedback)
 - hover:translate-x-1 (list items that nudge)
 - animate-pulse on accent elements (subtle attention)
 - group-hover:opacity-100 for reveal effects
 
-### Color & Energy
-- Dark canvas: bg-zinc-950 (true black feel)
-- Accent gradients: bg-gradient-to-br from-violet-500 to-fuchsia-500
-- Glows: shadow-lg shadow-violet-500/20 (depth and warmth)
-- Semi-transparent accents: bg-emerald-500/10 border-emerald-500/30
-- One vibrant accent per screen (violet, emerald, amber, rose, cyan)
 
-### Containers & Depth
-- Cards: bg-zinc-900/80 backdrop-blur-sm border border-zinc-800/50
-- Hover states: hover:border-zinc-700 hover:bg-zinc-800/80
-- Subtle shadows: shadow-xl shadow-black/20
-- Sharp edges: rounded or rounded-sm only
+### Containers & Layout  
+- Cards: bg-card rounded p-6 (AVOID BORDERS - use subtle backgrounds instead)
+- CRITICAL: Always add padding INSIDE cards (p-4 to p-6) - content should never touch edges
+- Hover states: hover:bg-card/80 transition-colors
+- Sections: Use grid/flex with gap-4 to gap-8
+- Padding: p-4 to p-8 for sections, p-3 to p-6 for cards
 
 ## Edit Rules
 - Output raw HTML only (no markdown, code fences)
 - Preserve all data-source bindings - move them, don't delete them
 - Same data sources - never invent new ones
 - Sharp edges only (rounded-sm or rounded, never rounded-xl/2xl/3xl)
-- Dark theme: bg-zinc-900/950, text-white/zinc-100
+- Use theme classes: bg-background, bg-card, text-foreground, text-muted-foreground
 
 ## What to Change
 Respond to the user's edit request:
@@ -499,9 +547,9 @@ Instruction: {click_prompt}
 {clicked_item_desc}
 
 ## Design Philosophy
-Imagine you're designing the detail view of a real app. What does Spotify show when you tap on a song? What does ESPN show when you tap on a player? What does Robinhood show when you tap on a stock?
-
 Design like you're building a REAL product that millions use.
+
+Create a focused detail view that expands on the clicked item with relevant context and related data.
 
 GO WILD with this detail view. Make it the hyperfocus moment. The user clicked because they want MORE - give them an experience that makes them glad they clicked.
 
@@ -527,29 +575,34 @@ Make this detail view absolutely slap:
 
 ### Typography & Hierarchy
 - Hero numbers: text-7xl to text-9xl font-black (make them impossible to ignore)
-- Supporting text: text-xs uppercase tracking-widest text-zinc-500
+- Supporting text: text-xs uppercase tracking-widest text-muted-foreground
 - Scale contrast is everything - tiny labels next to massive numbers
+- Use text-foreground for main text, text-muted-foreground for secondary
 
 ### Animation & Motion (Tailwind)
 Add life with subtle animations:
 - hover:scale-[1.02] transition-transform duration-200 (cards that breathe)
-- hover:bg-zinc-800 transition-colors (responsive feedback)
+- hover:bg-card/80 transition-colors (responsive feedback)
 - hover:translate-x-1 (list items that nudge)
 - animate-pulse on accent elements (subtle attention)
 - group-hover:opacity-100 for reveal effects
 
-### Color & Energy
-- Dark canvas: bg-zinc-950 (true black feel)
-- Accent gradients: bg-gradient-to-br from-violet-500 to-fuchsia-500
-- Glows: shadow-lg shadow-violet-500/20 (depth and warmth)
-- Semi-transparent accents: bg-emerald-500/10 border-emerald-500/30
-- One vibrant accent per screen (violet, emerald, amber, rose, cyan)
 
-### Containers & Depth
-- Cards: bg-zinc-900/80 backdrop-blur-sm border border-zinc-800/50
-- Hover states: hover:border-zinc-700 hover:bg-zinc-800/80
-- Subtle shadows: shadow-xl shadow-black/20
-- Sharp edges: rounded or rounded-sm only
+### Containers & Layout  
+- Cards: bg-card rounded p-6 (AVOID BORDERS - use subtle backgrounds instead)
+- CRITICAL: Always add padding INSIDE cards (p-4 to p-6) - content should never touch edges
+- Hover states: hover:bg-card/80 transition-colors
+- Sections: Use grid/flex with gap-4 to gap-8
+- Padding: p-4 to p-8 for sections, p-3 to p-6 for cards
+
+### Spacing & Rhythm
+- add generous vertical spacing between sections (e.g. mb-8)
+- Between major sections use space-y-8 or individual mb-10 to mb-16
+- Between related items: space-y-4 or mb-4 to mb-6
+- Grid gaps: gap-6 for cards, gap-4 for smaller items
+- Top-level wrapper: px-6 py-8 (generous padding around entire UI)
+- Use margin-bottom liberally - cramped UI looks cheap and unprofessional
+- Give content room to breathe - white space is good design
 
 ### Layout: Mobile-App Feel
 - Full-bleed hero sections (no padding on top element)

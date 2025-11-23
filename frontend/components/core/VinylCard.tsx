@@ -190,8 +190,8 @@ export function VinylCard({
                     <h3 className={cn(
                         'font-bold mb-1',
                         theme === 'tokyo-night' && 'text-foreground text-lg',
-                        theme === 'impact' && 'font-black uppercase tracking-tight text-base',
-                        theme === 'elegant' && 'font-serif text-lg',
+                        theme === 'impact' && 'font-black uppercase tracking-tight text-base text-foreground',
+                        theme === 'elegant' && 'font-serif text-lg text-foreground',
                         theme === 'neobrutalism' && 'font-space-grotesk text-foreground text-lg'
                     )}>
                         {title}

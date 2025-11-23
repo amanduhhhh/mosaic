@@ -1,65 +1,552 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useStreamStore } from '@/stores/stream';
+import { useThemeStore } from '@/store/useThemeStore';
+import { HybridRenderer } from '@/components/HybridRenderer';
+import { DraggableWindow } from '@/components/DraggableWindow';
+import { DebugWindow } from '@/components/DebugWindow';
+import { Moon, Zap, Feather, Box, Edit, Bug } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+const SUGGESTED_PROMPTS = [
+    "Show my Spotify top songs and listening stats",
+    "Lakers vs Celtics - compare their season records",
+    "My running stats from Strava with recent activities",
+    "AAPL, GOOGL, MSFT stock prices and performance",
+    "Cowboys, Yankees, and Bruins - my favorite teams",
+    "My Clash Royale stats for #LP8U0V8PC",
+];
+
+const REVOLVING_PLACEHOLDERS = [
+    "Visualize your Spotify data...",
+    "Compare sports team stats...",
+    "Analyze your stock portfolio...",
+    "Track your fitness progress...",
+];
+
+export default function IndexPage() {
+  const [hasStarted, setHasStarted] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  
+  const [query, setQuery] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+  const [mosaicExited, setMosaicExited] = useState(false);
+  const [mosaicHasBeenHidden, setMosaicHasBeenHidden] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editQuery, setEditQuery] = useState('');
+  const [showDebug, setShowDebug] = useState(false);
+  const [showThinking, setShowThinking] = useState(true);
+
+  const {
+    isStreaming,
+    dataContext,
+    htmlContent,
+    rawResponse,
+    thinkingMessages,
+    viewStack,
+    startStream,
+    reset,
+    refineStream,
+    handleInteraction,
+    goBack,
+  } = useStreamStore();
+
+  const { currentTheme, setTheme } = useThemeStore();
+
+  useEffect(() => {
+    if (isFocused || query) return;
+    const interval = setInterval(() => {
+      setPlaceholderIndex((prev) => (prev + 1) % REVOLVING_PLACEHOLDERS.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [isFocused, query]);
+
+  useEffect(() => {
+    if (isFocused && !mosaicHasBeenHidden) {
+      setMosaicHasBeenHidden(true);
+      setMosaicExited(false);
+    }
+  }, [isFocused, mosaicHasBeenHidden]);
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setQuery(suggestion);
+    startStream(suggestion);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!query.trim() || isStreaming) return;
+    startStream(query);
+    setQuery('');
+  };
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editQuery.trim() || isStreaming) return;
+    refineStream(editQuery);
+    setEditQuery('');
+    setIsEditOpen(false);
+  };
+
+  const hasContent = htmlContent.length > 0;
+
+  const handleBegin = async () => {
+    if (isTransitioning) return;
+    
+    setIsTransitioning(true);
+    
+    try {
+      const audio = new Audio('/sounds/mosaic_boot.mp3');
+      audio.volume = 0.3;
+      await audio.play();
+    } catch (err) {
+      console.log('Boot sound blocked:', err);
+    }
+    
+    setTimeout(() => {
+      setHasStarted(true);
+      setIsTransitioning(false);
+    }, 800);
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="fixed inset-0 w-full h-full overflow-hidden bg-black text-white selection:bg-white/20">
+      {/* Shared Background */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30"
+          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1920&q=80')" }}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+        <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-600/10 blur-[120px]" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-600/10 blur-[120px]" />
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+      </div>
+
+      <AnimatePresence mode="wait">
+        {!hasStarted ? (
+          <motion.div
+            key="splash"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.6 }}
+            className="relative z-10 flex flex-col items-center justify-center h-full cursor-pointer group"
+            onClick={handleBegin}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8, ease: 'easeInOut' }}
+          className="text-center"
+        >
+          <div className="relative mb-12">
+            <motion.div
+              className="absolute -inset-20 bg-white/10 blur-3xl"
+              animate={{
+                opacity: [0.2, 0.4, 0.2],
+                scale: [1, 1.1, 1],
+              }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            
+            <motion.h1 
+              className="relative text-[10rem] font-black tracking-tighter leading-none"
+              initial={{ opacity: 0, y: 30, scale: 0.8 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ delay: 0.2, duration: 0.8, type: 'spring', bounce: 0.3 }}
+            >
+              <span className="bg-gradient-to-br from-white via-white to-white/60 bg-clip-text text-transparent drop-shadow-[0_0_60px_rgba(255,255,255,0.3)]">
+                MOSAIC
+              </span>
+            </motion.h1>
+            
+            <motion.div
+              className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-64 h-1 bg-gradient-to-r from-transparent via-white/50 to-transparent"
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: 1 }}
+              transition={{ delay: 0.8, duration: 0.6 }}
+            />
+          </div>
+          
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.9 }}
+            className="space-y-4 mb-16"
           >
-            Documentation
-          </a>
-        </div>
-      </main>
+            <p
+              className="text-2xl font-bold tracking-wide"
+              style={{ textShadow: '0 2px 8px rgba(0, 0, 0, 0.6)' }}
+            >
+              Imagine your data
+            </p>
+            <p className="text-white/40 text-sm tracking-widest uppercase">
+              Generative UI Operating System
+            </p>
+          </motion.div>
+
+          {isTransitioning ? (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex flex-col items-center gap-5"
+            >
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                className="w-10 h-10 rounded-full border-2 border-white/20 border-t-white backdrop-blur-xl"
+              />
+              <p className="text-white/60 text-sm tracking-widest uppercase font-bold">
+                Initializing System...
+              </p>
+            </motion.div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1.4 }}
+            >
+              <motion.div
+                className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full hover:bg-white/15 hover:border-white/30 transition-all"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.98 }}
+                style={{ textShadow: '0 2px 4px rgba(0, 0, 0, 0.6)' }}
+              >
+                <div className="w-2 h-2 rounded-full bg-white/70" />
+                <span className="text-sm text-white italic font-bold">Begin</span>
+              </motion.div>
+            </motion.div>
+          )}
+        </motion.div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="home"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            className="relative z-10 flex flex-col h-screen p-6 gap-6 pointer-events-none"
+          >
+            {/* Thinking Indicator */}
+            <AnimatePresence>
+              {isStreaming && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  className="fixed top-6 right-6 z-50 flex items-start gap-3"
+                >
+                  <AnimatePresence>
+                    {showThinking && (
+                      <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        className="w-80 bg-white/10 backdrop-blur-xl border border-white/10 rounded-lg shadow-2xl p-4 pointer-events-auto"
+                      >
+                        <div className="text-xs font-medium text-white/90 mb-3">Mosaic thinking...</div>
+                        
+                        <div className="space-y-1.5 max-h-96 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] font-mono text-[11px]">
+                          {thinkingMessages && thinkingMessages.length > 0 ? (
+                            thinkingMessages.map((msg, i) => (
+                              <div key={i} className="text-xs">
+                                {msg.type === 'thinking' && (
+                                  <div className="flex items-start gap-2 text-white/70">
+                                    <span className="text-white/50 mt-0.5">—</span>
+                                    <span>{msg.message}</span>
+                                  </div>
+                                )}
+                                {msg.type === 'tool_call' && (
+                                  <div className="flex items-start gap-2">
+                                    <span className="text-blue-400 mt-0.5">{'>'}</span>
+                                    <div>
+                                      <span className="text-blue-400 font-mono">{msg.function}</span>
+                                      {msg.args && Object.keys(msg.args).length > 0 && (
+                                        <span className="text-white/40 ml-1 text-[10px]">
+                                          ({Object.entries(msg.args).map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join(', ')})
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                                {msg.type === 'tool_result' && (
+                                  <div className="flex items-center gap-2 text-emerald-400">
+                                    <span>{'<'}</span>
+                                    <span className="font-mono">{msg.function}</span>
+                                    <span className="text-emerald-500">ok</span>
+                                  </div>
+                                )}
+                                {msg.type === 'tool_error' && (
+                                  <div className="flex items-start gap-2 text-red-400">
+                                    <span className="mt-0.5">!</span>
+                                    <div>
+                                      <span className="font-mono">{msg.function}</span>
+                                      <span className="text-red-500 ml-1">failed: {msg.error}</span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-white/50 flex items-start gap-2">
+                              <span className="mt-0.5">—</span>
+                              <span>Planning query...</span>
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  
+                  <button
+                    onClick={() => setShowThinking(!showThinking)}
+                    className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-xl border border-white/20 shadow-2xl flex items-center justify-center cursor-pointer hover:bg-white/30 transition-colors shrink-0"
+                  >
+                    <motion.div
+                      animate={{
+                        scale: [1, 1.2, 1],
+                        opacity: [0.6, 1, 0.6],
+                      }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                      }}
+                      className="w-6 h-6 rounded-full bg-white/90"
+                    />
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Main Window */}
+            <AnimatePresence>
+              {hasContent && (
+                <DraggableWindow
+                  title={viewStack.length > 0 ? 'Detail View' : ''}
+                  onClose={() => reset()}
+                  onBack={goBack}
+                  canGoBack={viewStack.length > 0}
+                  initialWidth={900}
+                  initialHeight={700}
+                  headerActions={
+                    <div className="flex items-center gap-1 bg-black/20 p-1 rounded-lg">
+                      <button onClick={() => setTheme('tokyo-night')} className={cn("px-2 py-0.5 rounded text-[10px] font-medium transition-all flex items-center gap-1", currentTheme === 'tokyo-night' ? "bg-white/10 text-white" : "text-white/60 hover:text-white/80")}>
+                        <Moon size={10} /> Tokyo
+                      </button>
+                      <button onClick={() => setTheme('impact')} className={cn("px-2 py-0.5 rounded text-[10px] font-medium transition-all flex items-center gap-1", currentTheme === 'impact' ? "bg-white/10 text-white" : "text-white/60 hover:text-white/80")}>
+                        <Zap size={10} /> Impact
+                      </button>
+                      <button onClick={() => setTheme('elegant')} className={cn("px-2 py-0.5 rounded text-[10px] font-medium transition-all flex items-center gap-1", currentTheme === 'elegant' ? "bg-white/10 text-white" : "text-white/60 hover:text-white/80")}>
+                        <Feather size={10} /> Elegant
+                      </button>
+                      <button onClick={() => setTheme('neobrutalism')} className={cn("px-2 py-0.5 rounded text-[10px] font-medium transition-all flex items-center gap-1", currentTheme === 'neobrutalism' ? "bg-white/10 text-white" : "text-white/60 hover:text-white/80")}>
+                        <Box size={10} /> Neo
+                      </button>
+                    </div>
+                  }
+                >
+                  <div className="bg-background p-6 min-h-full">
+                    <HybridRenderer
+                      htmlContent={htmlContent}
+                      dataContext={dataContext}
+                      onInteraction={handleInteraction}
+                      isInteracting={isStreaming && viewStack.length > 0}
+                    />
+                  </div>
+                </DraggableWindow>
+              )}
+            </AnimatePresence>
+
+            {/* Debug Window */}
+            <AnimatePresence>
+              {showDebug && hasContent && (
+                <DraggableWindow
+                  title="Debug"
+                  onClose={() => setShowDebug(false)}
+                  initialWidth={600}
+                  initialHeight={500}
+                >
+                  <DebugWindow dataContext={dataContext} rawResponse={rawResponse} />
+                </DraggableWindow>
+              )}
+            </AnimatePresence>
+
+            {/* Floating Action Buttons */}
+            {hasContent && !isStreaming && (
+              <div className="fixed bottom-20 right-6 z-50 flex flex-col gap-2 pointer-events-auto">
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  onClick={() => setIsEditOpen(!isEditOpen)}
+                  className="p-3 bg-white/10 hover:bg-white/15 backdrop-blur-xl border border-white/10 rounded-lg shadow-lg transition-colors"
+                  title="Edit/Refine"
+                >
+                  <Edit size={16} className="text-white/70" />
+                </motion.button>
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  onClick={() => setShowDebug(!showDebug)}
+                  className="p-3 bg-white/10 hover:bg-white/15 backdrop-blur-xl border border-white/10 rounded-lg shadow-lg transition-colors"
+                  title="Debug"
+                >
+                  <Bug size={16} className="text-white/70" />
+                </motion.button>
+              </div>
+            )}
+
+            {/* Edit Modal */}
+            <AnimatePresence>
+              {isEditOpen && hasContent && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 20 }}
+                  className="fixed bottom-36 right-6 z-50 bg-white/10 backdrop-blur-xl border border-white/10 rounded-lg p-4 shadow-2xl min-w-[300px] pointer-events-auto"
+                >
+                  <form onSubmit={handleEditSubmit} className="flex flex-col gap-3">
+                    <input
+                      type="text"
+                      value={editQuery}
+                      onChange={(e) => setEditQuery(e.target.value)}
+                      placeholder="Refine: e.g., make it more compact"
+                      className="w-full bg-white/5 border border-white/10 rounded-md px-3 py-2 text-sm text-white/75 placeholder-white/30 focus:outline-none focus:border-white/20"
+                      autoFocus
+                    />
+                    <div className="flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={() => setIsEditOpen(false)}
+                        className="text-xs text-white/50 hover:text-white/70 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={!editQuery.trim() || isStreaming}
+                        className="px-3 py-1.5 text-xs bg-white/10 hover:bg-white/20 text-white/70 hover:text-white rounded-md transition-colors disabled:opacity-30"
+                      >
+                        Refine
+                      </button>
+                    </div>
+                  </form>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Bottom Search Area */}
+            <div className="fixed bottom-6 left-0 right-0 flex flex-col items-center justify-center z-50 pointer-events-none">
+              <div className="w-full max-w-2xl px-6 pointer-events-auto">
+                {/* Suggested Prompts */}
+                <AnimatePresence>
+                  {isFocused && mosaicExited && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      transition={{ duration: 0.2 }}
+                      className={cn(
+                        "mb-6 z-30",
+                        hasContent 
+                          ? "absolute bottom-full left-1/2 transform -translate-x-1/2 flex flex-wrap justify-center gap-2 max-w-2xl" 
+                          : "flex flex-wrap justify-center gap-2 max-w-2xl"
+                      )}
+                    >
+                      {SUGGESTED_PROMPTS.map((prompt, i) => (
+                        <button
+                          key={i}
+                          onClick={() => handleSuggestionClick(prompt)}
+                          className={cn(
+                            "px-4 py-2 text-sm transition-all shadow-lg backdrop-blur-xl",
+                            "text-white hover:text-white",
+                            "border border-white/10 hover:border-white/20",
+                            hasContent 
+                              ? "bg-white/10 hover:bg-white/15 rounded-lg" 
+                              : "bg-white/5 hover:bg-white/10 rounded-full"
+                          )}
+                          style={{ 
+                            backdropFilter: 'blur(12px)',
+                            textShadow: '0 2px 4px rgba(0, 0, 0, 0.6), 0 1px 2px rgba(0, 0, 0, 0.4)'
+                          }}
+                        >
+                          {prompt}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Mosaic Title */}
+                <AnimatePresence onExitComplete={() => setMosaicExited(true)}>
+                  {!query && !isFocused && !mosaicHasBeenHidden && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
+                      className="mb-8 relative z-10"
+                    >
+                      <h1 className="text-7xl font-black tracking-tight">
+                        <span className="bg-gradient-to-r from-white via-white/90 to-white/60 bg-clip-text text-transparent" style={{ textShadow: '0 0 40px rgba(255, 255, 255, 0.2)' }}>
+                          MOSAIC
+                        </span>
+                      </h1>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Search Bar */}
+                <motion.div className={cn("relative w-full group transition-all duration-300", hasContent ? "max-w-3xl" : "max-w-2xl", isFocused ? "scale-105" : "scale-100")}>
+                  <div className={cn("absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500", hasContent ? "rounded-lg" : "rounded-2xl")} />
+
+                  <form onSubmit={handleSubmit} className="relative">
+                    <div className={cn("relative flex items-center bg-white/10 backdrop-blur-xl border border-white/10 overflow-hidden shadow-2xl transition-all duration-300 group-hover:bg-white/15 group-hover:border-white/20", hasContent ? "rounded-lg" : "rounded-2xl")}>
+                      <input
+                        type="text"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        onFocus={() => setIsFocused(true)}
+                        onBlur={() => setIsFocused(false)}
+                        className={cn("w-full bg-transparent border-none text-white/75 placeholder-transparent focus:outline-none focus:ring-0", hasContent ? "px-3 py-2 text-sm" : "px-4 py-3 text-base")}
+                      />
+
+                      <AnimatePresence mode="wait">
+                        {!query && (
+                          <motion.div
+                            key={placeholderIndex}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 0.4, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.3 }}
+                            className={cn("absolute pointer-events-none text-white", hasContent ? "left-3 text-sm" : "left-4 text-base")}
+                          >
+                            {REVOLVING_PLACEHOLDERS[placeholderIndex]}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      <button
+                        type="submit"
+                        disabled={!query.trim() || isStreaming}
+                        className={cn("mr-2 bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all disabled:opacity-30", hasContent ? "p-1.5 rounded-md" : "p-2 rounded-xl")}
+                      >
+                        {isStreaming ? (
+                          <div className={cn("border-2 border-white/30 border-t-white rounded-full animate-spin", hasContent ? "w-4 h-4" : "w-5 h-5")} />
+                        ) : (
+                          <div className="text-white text-xl">→</div>
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                </motion.div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

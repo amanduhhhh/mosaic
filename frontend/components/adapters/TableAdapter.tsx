@@ -9,17 +9,16 @@ interface TableColumn {
   sortable?: boolean;
 }
 
-export function TableAdapter({ data, config, onInteraction }: ComponentProps) {
+export function TableAdapter({ data, config }: ComponentProps) {
   const rows = (data as Record<string, unknown>[]) || [];
-  const columns = (config.columns as TableColumn[]) || [];
+  const columns = Array.isArray(config.columns) 
+    ? (config.columns as TableColumn[]) 
+    : [];
 
   return (
     <Table
       columns={columns}
       data={rows}
-      onSort={(key, direction) => {
-        onInteraction('sort', { index: 0, item: { key, direction } as any });
-      }}
     />
   );
 }

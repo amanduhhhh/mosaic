@@ -1,12 +1,17 @@
 'use client';
 
 import { List } from '@/components/core/List';
-import type { ComponentProps, ListItem } from '../types';
+import type { ComponentProps } from '../types';
 
 export function ListAdapter({ data, config, onInteraction }: ComponentProps) {
-  const items = (data as ListItem[]) || [];
+  let items = (data as any[]) || [];
   const template = config.template || { primary: 'title', secondary: 'subtitle' };
   const size = (config.size as 'sm' | 'md' | 'lg') || 'md';
+
+  if (items.length > 0 && typeof items[0] === 'string') {
+    items = items.map((item, index) => ({ id: index, value: item as string }));
+    template.primary = 'value';
+  }
 
   return (
     <List
@@ -18,7 +23,7 @@ export function ListAdapter({ data, config, onInteraction }: ComponentProps) {
       }}
       ranked={config.layout === 'ranked'}
       size={size}
-      onItemClick={(item, index) => onInteraction('select', { item, index })}
+      onItemClick={(item) => onInteraction?.({ clickedData: item })}
     />
   );
 }

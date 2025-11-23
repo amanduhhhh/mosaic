@@ -133,9 +133,9 @@ export function Calendar({
             return cn(
                 baseStyles,
                 theme === 'tokyo-night' && 'text-foreground',
-                theme === 'impact' && 'font-bold',
+                theme === 'impact' && 'font-bold text-foreground',
                 theme === 'elegant' && 'text-primary',
-                theme === 'neobrutalism' && 'font-bold'
+                theme === 'neobrutalism' && 'font-bold text-foreground'
             );
         }
 

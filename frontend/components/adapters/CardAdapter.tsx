@@ -42,7 +42,7 @@ export function CardAdapter({ data, config, onInteraction }: ComponentProps) {
       value={value !== undefined ? String(value) : undefined}
       trend={trend}
       image={cardData.image ? String(cardData.image) : undefined}
-      onClick={() => onInteraction('click', { data: cardData })}
+      onClick={() => onInteraction?.({ clickedData: cardData })}
     />
   );
 }

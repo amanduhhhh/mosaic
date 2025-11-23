@@ -235,7 +235,7 @@ class SportsDataFetcher:
             if not teams:
                 return None
 
-            return {"teams": teams, "league": "NBA", "last_updated": datetime.now().isoformat()}
+            return {"nba_teams": teams, "nba_league": "NBA", "nba_last_updated": datetime.now().isoformat()}
         except Exception as e:
             logger.error(f"Failed to fetch NBA summary: {e}")
             return None
@@ -261,7 +261,7 @@ class SportsDataFetcher:
             if not teams:
                 return None
 
-            return {"teams": teams, "league": "NFL", "last_updated": datetime.now().isoformat()}
+            return {"nfl_teams": teams, "nfl_league": "NFL", "nfl_last_updated": datetime.now().isoformat()}
         except Exception as e:
             logger.error(f"Failed to fetch NFL summary: {e}")
             return None
@@ -287,7 +287,7 @@ class SportsDataFetcher:
             if not teams:
                 return None
 
-            return {"teams": teams, "league": "MLB", "last_updated": datetime.now().isoformat()}
+            return {"mlb_teams": teams, "mlb_league": "MLB", "mlb_last_updated": datetime.now().isoformat()}
         except Exception as e:
             logger.error(f"Failed to fetch MLB summary: {e}")
             return None
@@ -313,7 +313,7 @@ class SportsDataFetcher:
             if not teams:
                 return None
 
-            return {"teams": teams, "league": "NHL", "last_updated": datetime.now().isoformat()}
+            return {"nhl_teams": teams, "nhl_league": "NHL", "nhl_last_updated": datetime.now().isoformat()}
         except Exception as e:
             logger.error(f"Failed to fetch NHL summary: {e}")
             return None

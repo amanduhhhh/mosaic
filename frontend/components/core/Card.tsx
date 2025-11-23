@@ -172,8 +172,8 @@ export function Card({
                                     className={cn(
                                         'text-2xl font-bold',
                                         theme === 'tokyo-night' && 'text-foreground group-hover:text-[hsl(var(--chart-1))] group-hover:drop-shadow-[0_0_10px_hsl(var(--chart-1))] transition-all',
-                                        theme === 'impact' && 'font-black',
-                                        theme === 'elegant' && 'font-serif',
+                                        theme === 'impact' && 'font-black text-foreground',
+                                        theme === 'elegant' && 'font-serif text-foreground',
                                         theme === 'neobrutalism' && 'text-primary'
                                     )}
                                 >

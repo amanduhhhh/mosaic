@@ -1,10 +1,23 @@
 'use client';
 
 import { LineChart, BarChart } from '@/components/core';
-import type { ComponentProps, ChartDataPoint } from '../types';
+import type { ComponentProps } from '../types';
+
+interface ChartItem {
+  [key: string]: string | number | undefined;
+}
 
 export function ChartAdapter({ data, config, onInteraction }: ComponentProps) {
-  const points = (data as ChartDataPoint[]) || [];
+  const items = (data as ChartItem[]) || [];
+  
+  const xField = config.template?.x || config.template?.label || 'label';
+  const yField = config.template?.y || config.template?.value || 'value';
+
+  const points = items.map(item => ({
+    label: String(item[xField] ?? ''),
+    value: Number(item[yField] ?? 0),
+    original: item,
+  }));
   
   const chartType = config.layout === 'bar' ? 'bar' : 'line';
   const ChartComponent = chartType === 'bar' ? BarChart : LineChart;
@@ -13,9 +26,9 @@ export function ChartAdapter({ data, config, onInteraction }: ComponentProps) {
     <div onClick={(e) => {
       const target = e.target as HTMLElement;
       const pointIndex = target.getAttribute('data-point-index');
-      if (pointIndex !== null) {
+      if (pointIndex !== null && onInteraction) {
         const index = parseInt(pointIndex, 10);
-        onInteraction('select', { point: points[index], index });
+        onInteraction({ clickedData: points[index].original });
       }
     }}>
       <ChartComponent

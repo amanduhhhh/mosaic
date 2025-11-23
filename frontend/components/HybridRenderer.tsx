@@ -276,7 +276,7 @@ export function HybridRenderer({
       initial={{ opacity: 0 }}
       animate={{ opacity: isReady ? (isInteracting ? 0.5 : 1) : 0 }}
       transition={{ duration: 0.2 }}
-      className="hybrid-renderer"
+      className="hybrid-renderer w-full"
       style={{
         pointerEvents: isInteracting ? 'none' : 'auto',
       }}

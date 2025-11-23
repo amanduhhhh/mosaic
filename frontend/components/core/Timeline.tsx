@@ -125,7 +125,7 @@ export function Timeline({
                             className={cn(
                                 'font-medium',
                                 theme === 'tokyo-night' && 'text-foreground',
-                                theme === 'impact' && 'font-black uppercase text-sm tracking-tight',
+                                theme === 'impact' && 'font-black uppercase text-sm tracking-tight text-foreground',
                                 theme === 'elegant' && 'font-serif text-foreground',
                                 theme === 'neobrutalism' && 'font-bold text-foreground'
                             )}

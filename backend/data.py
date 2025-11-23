@@ -314,12 +314,12 @@ TOOL_REGISTRY = {
 
 COMPONENT_SCHEMAS = {
     "List": {
-        "description": "Ranked/unranked list. Top songs, leaderboards, ordered data.",
+        "description": "Ranked/unranked list. Top songs, leaderboards, ordered data. Works with arrays of objects OR arrays of primitive strings.",
         "size": "sm: 50px/item, md: 60px/item, lg: 70px/item. Max width 700px. 3-8 items recommended.",
-        "data": [{"id": "string|number", "[any_field]": "any"}],
+        "data": [{"id": "string|number", "[any_field]": "any"}] or ["string1", "string2"],
         "config": {
             "template": {
-                "primary": "field_name - main text - REQUIRED",
+                "primary": "field_name - main text - REQUIRED for objects, omit for string arrays",
                 "secondary": "field_name - subtitle - OPTIONAL",
                 "meta": "field_name - right metadata (plays, count, score) - OPTIONAL, only if meaningful, not IDs/random numbers"
             },
@@ -327,8 +327,8 @@ COMPONENT_SCHEMAS = {
             "size": "'sm' | 'md' | 'lg' - default: md"
         },
         "example": {
-            "data": [{"id": 1, "name": "Item 1", "artist": "Creator", "plays": 342}],
-            "config": {"template": {"primary": "name", "secondary": "artist", "meta": "plays"}, "layout": "ranked"}
+            "data": [{"id": 1, "name": "Item 1", "category": "Type A", "count": 342}],
+            "config": {"template": {"primary": "name", "secondary": "category", "meta": "count"}, "layout": "ranked"}
         }
     },
     "Card": {
@@ -352,14 +352,18 @@ COMPONENT_SCHEMAS = {
     "Chart": {
         "description": "Line/bar chart. Trends, comparisons. Min 3 data points.",
         "size": "400-600px width, 300px height fixed.",
-        "data": [{"label": "string", "value": "number"}],
+        "data": [{"[any_field]": "any - must have one field for x-axis and one numeric field for y-axis"}],
         "config": {
-            "template": {"primary": "chart title - optional"},
+            "template": {
+                "x": "field_name for x-axis labels - REQUIRED",
+                "y": "field_name for y-axis values (must be numeric) - REQUIRED",
+                "primary": "chart title - optional"
+            },
             "layout": "'bar' | 'line' - default: line"
         },
         "example": {
-            "data": [{"label": "Jan", "value": 4200}, {"label": "Feb", "value": 5100}],
-            "config": {"layout": "line", "template": {"primary": "Monthly Revenue"}}
+            "data": [{"month": "Jan", "revenue": 4200}, {"month": "Feb", "revenue": 5100}],
+            "config": {"layout": "line", "template": {"x": "month", "y": "revenue", "primary": "Monthly Revenue"}}
         }
     },
     "Grid": {
@@ -377,13 +381,18 @@ COMPONENT_SCHEMAS = {
     "Timeline": {
         "description": "Chronological events. Activity history, milestones. 3-6 events recommended.",
         "size": "Vertical: max 700px width, ~100px/event. Horizontal: wide space, ~150px height.",
-        "data": [{"id": "string|number", "title": "string - REQUIRED", "description": "string - optional", "timestamp": "string - optional"}],
+        "data": [{"id": "string|number", "[any_field]": "any - must have at least one field for title"}],
         "config": {
+            "template": {
+                "title": "field_name for main event text - REQUIRED",
+                "description": "field_name for details - OPTIONAL",
+                "timestamp": "field_name for date/time - OPTIONAL"
+            },
             "orientation": "'vertical' | 'horizontal' - default: vertical"
         },
         "example": {
-            "data": [{"id": 1, "title": "Event", "description": "Details", "timestamp": "2 hours ago"}],
-            "config": {"orientation": "vertical"}
+            "data": [{"id": 1, "name": "Event A", "details": "Location X", "when": "2 hours ago"}],
+            "config": {"template": {"title": "name", "description": "details", "timestamp": "when"}, "orientation": "vertical"}
         }
     },
     "Table": {
@@ -401,8 +410,8 @@ COMPONENT_SCHEMAS = {
         }
     },
     "Vinyl": {
-        "description": "Animated vinyl card. Featured items. Any field combination: song+artist, artist+genre, album+year, etc. Use sparingly (1 per view).",
-        "size": "400px width, 450px height. Fixed size.",
+        "description": "Large animated vinyl card - visually prominent component. Featured items. Any field combination: song+artist, artist+genre, album+year, etc. Takes significant space - use sparingly (1 per view max).",
+        "size": "400px width, 450px height. Fixed size - this is a BIG component.",
         "data": {"[any_field]": "any - must have at least one field"},
         "config": {
             "template": {
@@ -431,11 +440,17 @@ COMPONENT_SCHEMAS = {
         }
     },
     "Clickable": {
-        "description": "Interactive button that triggers an action",
+        "description": "Interactive button/CTA - PRIMITIVE component (no auto-styling, you design it completely)",
         "use_when": "Any button, CTA, or clickable element that needs interaction handling",
         "data_shape": "string (button label) or not needed",
         "data": "string",
-        "config": {"label": "Button text", "class": "Tailwind classes for styling"},
-        "note": "ALWAYS use this for buttons, never raw <button> tags. The click-prompt defines what happens when clicked.",
+        "config": {
+            "label": "Button text - REQUIRED",
+            "class": "Tailwind classes for styling - REQUIRED. Must include: padding (px-4 py-2), background (bg-primary/bg-violet-500), text color (text-white), border, rounded, hover states, transitions"
+        },
+        "note": "ALWAYS use this for buttons, never raw <button> tags. The click-prompt defines what happens when clicked. This is PRIMITIVE - YOU must style it completely via config.class.",
+        "example": {
+            "config": {"label": "View Details", "class": "px-4 py-2 bg-violet-500 hover:bg-violet-600 text-white rounded-lg transition-colors shadow-lg"}
+        }
     },
 }

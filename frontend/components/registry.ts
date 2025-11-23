@@ -9,17 +9,7 @@ import {
   VinylAdapter,
   CalendarAdapter,
 } from './adapters';
-
-// import {
-//   ListPlaceholder,
-//   CardPlaceholder,
-//   ChartPlaceholder,
-//   GridPlaceholder,
-//   TimelinePlaceholder,
-//   TablePlaceholder,
-//   ClickablePlaceholder,
-// } from './placeholders';
-
+import { ClickablePlaceholder } from './placeholders';
 
 export const COMPONENT_REGISTRY: ComponentRegistry = {
   List: ListAdapter,
@@ -30,6 +20,7 @@ export const COMPONENT_REGISTRY: ComponentRegistry = {
   Table: TableAdapter,
   Vinyl: VinylAdapter,
   Calendar: CalendarAdapter,
+  Clickable: ClickablePlaceholder,
 };
 
 // export const COMPONENT_REGISTRY: ComponentRegistry = {

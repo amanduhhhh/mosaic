@@ -43,7 +43,7 @@ export function ThinkingWidget({ messages, isVisible }: ThinkingWidgetProps) {
           <div key={i} className="text-xs">
             {msg.type === 'thinking' && (
               <div className="flex items-start gap-2 text-zinc-400">
-                <span className="text-violet-400 mt-0.5">*</span>
+                <span className="text-violet-400 mt-0.5">—</span>
                 <span>{msg.message}</span>
               </div>
             )}

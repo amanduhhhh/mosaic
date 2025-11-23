@@ -22,7 +22,7 @@ export function VinylAdapter({ data, config, onInteraction }: ComponentProps) {
             artist={artist ? String(artist) : ''}
             image={image}
             label={label}
-            onClick={() => onInteraction('click', { data: vinylData })}
+            onClick={() => onInteraction?.({ clickedData: vinylData })}
         />
     );
 }

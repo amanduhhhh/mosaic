@@ -44,7 +44,7 @@ export function List<T extends Record<string, unknown>>({
 
                 return (
                     <motion.div
-                        key={(item.id as string | number) || index}
+                        key={`${item.id}-${index}`}
                         initial={{ opacity: 0, x: -8 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{
@@ -71,7 +71,7 @@ export function List<T extends Record<string, unknown>>({
                                         size === 'md' && 'text-2xl',
                                         size === 'lg' && 'text-3xl',
                                         theme === 'tokyo-night' && 'font-bold text-foreground',
-                                        theme === 'impact' && 'font-black',
+                                        theme === 'impact' && 'font-black text-foreground',
                                         theme === 'elegant' && 'font-serif text-muted-foreground',
                                         theme === 'neobrutalism' && 'font-bold text-primary'
                                     )}
@@ -89,8 +89,8 @@ export function List<T extends Record<string, unknown>>({
                                         size === 'md' && 'text-base',
                                         size === 'lg' && 'text-lg',
                                         theme === 'tokyo-night' && 'text-foreground',
-                                        theme === 'impact' && 'font-black uppercase tracking-tight',
-                                        theme === 'elegant' && 'font-serif',
+                                        theme === 'impact' && 'font-black uppercase tracking-tight text-foreground',
+                                        theme === 'elegant' && 'font-serif text-foreground',
                                         theme === 'neobrutalism' && 'font-bold text-foreground'
                                     )}
                                 >
@@ -138,7 +138,7 @@ export function List<T extends Record<string, unknown>>({
                 <div
                     className={cn(
                         'py-8 text-center',
-                        theme === 'impact' && 'font-black uppercase tracking-widest',
+                        theme === 'impact' && 'font-black uppercase tracking-widest text-foreground',
                         theme === 'neobrutalism' && 'font-bold',
                         'text-muted-foreground'
                     )}

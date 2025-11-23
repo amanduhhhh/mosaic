@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useStreamStore } from '@/stores/stream';
 import { useThemeStore } from '@/store/useThemeStore';
 import { HybridRenderer } from '@/components/HybridRenderer';
+import { DraggableWindow } from '@/components/DraggableWindow';
+import { DebugWindow } from '@/components/DebugWindow';
 import {
     Command,
     Terminal,
@@ -19,7 +21,8 @@ import {
     ChevronRight,
     Box,
     Edit,
-    ChevronUp
+    ChevronUp,
+    Bug
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -29,6 +32,7 @@ const SUGGESTED_PROMPTS = [
     "My running stats from Strava with recent activities",
     "AAPL, GOOGL, MSFT stock prices and performance",
     "Cowboys, Yankees, and Bruins - my favorite teams",
+    "My Clash Royale stats for #LP8U0V8PC",
 ];
 
 const REVOLVING_PLACEHOLDERS = [
@@ -48,7 +52,8 @@ export default function HomePage() {
     const [mosaicHasBeenHidden, setMosaicHasBeenHidden] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [editQuery, setEditQuery] = useState('');
-    const [windowContent, setWindowContent] = useState<{ htmlContent: string; dataContext: any } | null>(null);
+    const [showDebug, setShowDebug] = useState(false);
+    const [showThinking, setShowThinking] = useState(true);
 
     const {
         isStreaming,
@@ -56,9 +61,12 @@ export default function HomePage() {
         htmlContent,
         rawResponse,
         thinkingMessages,
+        viewStack,
         startStream,
         reset,
         refineStream,
+        handleInteraction,
+        goBack,
     } = useStreamStore();
 
     const { currentTheme, setTheme } = useThemeStore();
@@ -78,7 +86,6 @@ export default function HomePage() {
             setMosaicExited(false);
         }
     }, [isFocused, mosaicHasBeenHidden]);
-
 
     const handleSuggestionClick = (suggestion: string) => {
         setQuery(suggestion);
@@ -100,18 +107,12 @@ export default function HomePage() {
         setIsEditOpen(false);
     };
 
-    useEffect(() => {
-        if (htmlContent) {
-            setWindowContent({ htmlContent, dataContext });
-        }
-    }, [htmlContent, dataContext]);
-
-    const hasContent = htmlContent || isStreaming || windowContent !== null;
+    const hasContent = htmlContent || isStreaming;
 
     return (
-        <div className="relative min-h-screen w-full overflow-hidden bg-black text-white selection:bg-white/20">
+        <div className="fixed inset-0 w-full h-full overflow-hidden bg-black text-white selection:bg-white/20">
             {/* Animated Background */}
-            <div className="absolute inset-0 z-0">
+            <div className="absolute inset-0 z-0 pointer-events-none">
                 <div 
                     className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30"
                     style={{ backgroundImage: "url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1920&q=80')" }}
@@ -130,78 +131,117 @@ export default function HomePage() {
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
-                        className="fixed top-6 right-6 z-50"
+                        className="fixed top-6 right-6 z-50 flex items-start gap-3"
                     >
-                        <div className="group relative">
-                            <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-xl border border-white/20 shadow-2xl flex items-center justify-center cursor-pointer">
+                        <AnimatePresence>
+                            {showThinking && (
                                 <motion.div
-                                    animate={{
-                                        scale: [1, 1.2, 1],
-                                        opacity: [0.6, 1, 0.6],
-                                    }}
-                                    transition={{
-                                        duration: 1.5,
-                                        repeat: Infinity,
-                                        ease: "easeInOut"
-                                    }}
-                                    className="w-6 h-6 rounded-full bg-white/90"
-                                />
-                            </div>
-                            
-                            {/* Hover Tooltip */}
-                            <div className="absolute top-full right-0 mt-2 w-80 bg-white/10 backdrop-blur-xl border border-white/10 rounded-lg shadow-2xl p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-auto">
-                                <div className="text-xs font-medium text-white/90 mb-3">Mosaic thinking...</div>
-                                
-                                <div className="space-y-1.5 max-h-96 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] font-mono text-[11px]">
-                                    {thinkingMessages && thinkingMessages.length > 0 ? (
-                                        thinkingMessages.map((msg, i) => (
-                                            <div key={i} className="text-white/70">
-                                                <span className="text-white/50">*</span> {msg.message || msg.type}
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: 20 }}
+                                    className="w-80 bg-white/10 backdrop-blur-xl border border-white/10 rounded-lg shadow-2xl p-4 pointer-events-auto"
+                                >
+                                    <div className="text-xs font-medium text-white/90 mb-3">Mosaic thinking...</div>
+                                    
+                                    <div className="space-y-1.5 max-h-96 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] font-mono text-[11px]">
+                                        {thinkingMessages && thinkingMessages.length > 0 ? (
+                                            thinkingMessages.map((msg, i) => (
+                                                <div key={i} className="text-xs">
+                                                    {msg.type === 'thinking' && (
+                                                        <div className="flex items-start gap-2 text-white/70">
+                                                            <span className="text-white/50 mt-0.5">—</span>
+                                                            <span>{msg.message}</span>
+                                                        </div>
+                                                    )}
+
+                                                    {msg.type === 'tool_call' && (
+                                                        <div className="flex items-start gap-2">
+                                                            <span className="text-blue-400 mt-0.5">{'>'}</span>
+                                                            <div>
+                                                                <span className="text-blue-400 font-mono">{msg.function}</span>
+                                                                {msg.args && Object.keys(msg.args).length > 0 && (
+                                                                    <span className="text-white/40 ml-1 text-[10px]">
+                                                                        ({Object.entries(msg.args).map(([k, v]) =>
+                                                                            `${k}: ${JSON.stringify(v)}`
+                                                                        ).join(', ')})
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {msg.type === 'tool_result' && (
+                                                        <div className="flex items-center gap-2 text-emerald-400">
+                                                            <span>{'<'}</span>
+                                                            <span className="font-mono">{msg.function}</span>
+                                                            <span className="text-emerald-500">ok</span>
+                                                        </div>
+                                                    )}
+
+                                                    {msg.type === 'tool_error' && (
+                                                        <div className="flex items-start gap-2 text-red-400">
+                                                            <span className="mt-0.5">!</span>
+                                                            <div>
+                                                                <span className="font-mono">{msg.function}</span>
+                                                                <span className="text-red-500 ml-1">failed: {msg.error}</span>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="text-white/50 flex items-start gap-2">
+                                                <span className="mt-0.5">—</span>
+                                                <span>Planning query...</span>
                                             </div>
-                                        ))
-                                    ) : (
-                                        <div className="text-white/50">* Planning query...</div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
+                                        )}
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                        
+                        <button
+                            onClick={() => setShowThinking(!showThinking)}
+                            className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-xl border border-white/20 shadow-2xl flex items-center justify-center cursor-pointer hover:bg-white/30 transition-colors shrink-0"
+                        >
+                            <motion.div
+                                animate={{
+                                    scale: [1, 1.2, 1],
+                                    opacity: [0.6, 1, 0.6],
+                                }}
+                                transition={{
+                                    duration: 1.5,
+                                    repeat: Infinity,
+                                    ease: "easeInOut"
+                                }}
+                                className="w-6 h-6 rounded-full bg-white/90"
+                            />
+                        </button>
                     </motion.div>
                 )}
             </AnimatePresence>
 
             {/* Main Content Area */}
-            <div className="relative z-10 flex flex-col h-screen p-6 gap-6">
+            <div className="relative z-0 flex flex-col h-screen p-6 gap-6 pointer-events-none">
 
 
-                {/* Single Window - Centered */}
+                {/* Main Window */}
                 <AnimatePresence>
-                    {windowContent && (
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.9 }}
-                            className="fixed bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl overflow-hidden z-30 flex flex-col"
-                            style={{
-                                left: 'calc(50% - 300px)',
-                                top: 'calc(50% - 300px)',
-                                width: '600px',
-                                height: '600px',
-                            }}
-                        >
-                            <div className="flex items-center justify-between px-3 py-2 border-b border-white/5 bg-white/5 shrink-0">
-                                <div className="flex items-center gap-1.5">
-                                    <div className="w-2 h-2 rounded-full bg-red-500/80" />
-                                    <div className="w-2 h-2 rounded-full bg-yellow-500/80" />
-                                    <div className="w-2 h-2 rounded-full bg-green-500/80" />
-                                </div>
-                                
-                                {/* Theme Tabs */}
+                    {hasContent && (
+                        <DraggableWindow
+                            title={viewStack.length > 0 ? 'Detail View' : ''}
+                            onClose={() => reset()}
+                            onBack={goBack}
+                            canGoBack={viewStack.length > 0}
+                            initialWidth={900}
+                            initialHeight={700}
+                            headerActions={
                                 <div className="flex items-center gap-1 bg-black/20 p-1 rounded-lg">
                                     <button
                                         onClick={() => setTheme('tokyo-night')}
                                         className={cn(
                                             "px-2 py-0.5 rounded text-[10px] font-medium transition-all flex items-center gap-1",
-                                            currentTheme === 'tokyo-night' ? "bg-white/10 text-white" : "text-white/40 hover:text-white/70"
+                                            currentTheme === 'tokyo-night' ? "bg-white/10 text-white" : "text-white/60 hover:text-white/80"
                                         )}
                                     >
                                         <Moon size={10} /> Tokyo
@@ -210,7 +250,7 @@ export default function HomePage() {
                                         onClick={() => setTheme('impact')}
                                         className={cn(
                                             "px-2 py-0.5 rounded text-[10px] font-medium transition-all flex items-center gap-1",
-                                            currentTheme === 'impact' ? "bg-white/10 text-white" : "text-white/40 hover:text-white/70"
+                                            currentTheme === 'impact' ? "bg-white/10 text-white" : "text-white/60 hover:text-white/80"
                                         )}
                                     >
                                         <Zap size={10} /> Impact
@@ -219,7 +259,7 @@ export default function HomePage() {
                                         onClick={() => setTheme('elegant')}
                                         className={cn(
                                             "px-2 py-0.5 rounded text-[10px] font-medium transition-all flex items-center gap-1",
-                                            currentTheme === 'elegant' ? "bg-white/10 text-white" : "text-white/40 hover:text-white/70"
+                                            currentTheme === 'elegant' ? "bg-white/10 text-white" : "text-white/60 hover:text-white/80"
                                         )}
                                     >
                                         <Feather size={10} /> Elegant
@@ -228,93 +268,102 @@ export default function HomePage() {
                                         onClick={() => setTheme('neobrutalism')}
                                         className={cn(
                                             "px-2 py-0.5 rounded text-[10px] font-medium transition-all flex items-center gap-1",
-                                            currentTheme === 'neobrutalism' ? "bg-white/10 text-white" : "text-white/40 hover:text-white/70"
+                                            currentTheme === 'neobrutalism' ? "bg-white/10 text-white" : "text-white/60 hover:text-white/80"
                                         )}
                                     >
                                         <Box size={10} /> Neo
                                     </button>
                                 </div>
-                                
-                                <button
-                                    onClick={() => setWindowContent(null)}
-                                    className="p-1 rounded-md hover:bg-white/10 transition-colors"
-                                >
-                                    <X size={12} className="text-white/60" />
-                                </button>
+                            }
+                        >
+                            <div className="bg-background p-6 min-h-full">
+                                <HybridRenderer
+                                    htmlContent={htmlContent}
+                                    dataContext={dataContext}
+                                    onInteraction={handleInteraction}
+                                    isInteracting={isStreaming && viewStack.length > 0}
+                                />
                             </div>
-                            <div className="flex-1 overflow-hidden p-3 relative [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                                <div className="h-full overflow-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                                    {windowContent.htmlContent ? (
-                                        <HybridRenderer
-                                            htmlContent={windowContent.htmlContent}
-                                            dataContext={windowContent.dataContext}
-                                            onInteraction={() => { }}
-                                        />
-                                    ) : (
-                                        <div className="flex items-center justify-center h-full text-white/20 text-sm">
-                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white" />
-                                        </div>
-                                    )}
-                                </div>
-                                
-                                {/* Edit Button - Bottom Right */}
-                                {windowContent.htmlContent && (
-                                    <div className="absolute bottom-3 right-3 z-20">
-                                        <AnimatePresence>
-                                            {isEditOpen ? (
-                                                <motion.div
-                                                    initial={{ opacity: 0, y: 20, scale: 0.9 }}
-                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                    exit={{ opacity: 0, y: 20, scale: 0.9 }}
-                                                    className="bg-white/10 backdrop-blur-xl border border-white/10 rounded-lg p-3 shadow-2xl min-w-[250px]"
-                                                >
-                                                    <form onSubmit={handleEditSubmit} className="flex flex-col gap-2">
-                                                        <input
-                                                            type="text"
-                                                            value={editQuery}
-                                                            onChange={(e) => setEditQuery(e.target.value)}
-                                                            placeholder="Refine: e.g., make it more compact"
-                                                            className="w-full bg-white/5 border border-white/10 rounded-md px-2 py-1.5 text-xs text-white/75 placeholder-white/30 focus:outline-none focus:border-white/20"
-                                                            autoFocus
-                                                        />
-                                                        <div className="flex items-center justify-between">
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setIsEditOpen(false)}
-                                                                className="text-[10px] text-white/50 hover:text-white/70 transition-colors"
-                                                            >
-                                                                Cancel
-                                                            </button>
-                                                            <button
-                                                                type="submit"
-                                                                disabled={!editQuery.trim() || isStreaming}
-                                                                className="px-2 py-1 text-[10px] bg-white/10 hover:bg-white/20 text-white/70 hover:text-white rounded-md transition-colors disabled:opacity-30"
-                                                            >
-                                                                Refine
-                                                            </button>
-                                                        </div>
-                                                    </form>
-                                                </motion.div>
-                                            ) : (
-                                                <motion.button
-                                                    initial={{ opacity: 0, scale: 0.8 }}
-                                                    animate={{ opacity: 1, scale: 1 }}
-                                                    exit={{ opacity: 0, scale: 0.8 }}
-                                                    onClick={() => setIsEditOpen(true)}
-                                                    className="p-2 bg-white/10 hover:bg-white/15 backdrop-blur-xl border border-white/10 rounded-lg shadow-lg transition-colors"
-                                                    title="Edit/Refine"
-                                                >
-                                                    <Edit size={14} className="text-white/70" />
-                                                </motion.button>
-                                            )}
-                                        </AnimatePresence>
-                                    </div>
-                                )}
-                            </div>
-                        </motion.div>
+                        </DraggableWindow>
                     )}
                 </AnimatePresence>
 
+                {/* Debug Window */}
+                <AnimatePresence>
+                    {showDebug && hasContent && (
+                        <DraggableWindow
+                            title="Debug"
+                            onClose={() => setShowDebug(false)}
+                            initialWidth={600}
+                            initialHeight={500}
+                        >
+                            <DebugWindow dataContext={dataContext} rawResponse={rawResponse} />
+                        </DraggableWindow>
+                    )}
+                </AnimatePresence>
+
+                {/* Floating Action Buttons */}
+                {hasContent && !isStreaming && (
+                    <div className="fixed bottom-20 right-6 z-50 flex flex-col gap-2 pointer-events-auto">
+                        <motion.button
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            onClick={() => setIsEditOpen(!isEditOpen)}
+                            className="p-3 bg-white/10 hover:bg-white/15 backdrop-blur-xl border border-white/10 rounded-lg shadow-lg transition-colors"
+                            title="Edit/Refine"
+                        >
+                            <Edit size={16} className="text-white/70" />
+                        </motion.button>
+                        <motion.button
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            onClick={() => setShowDebug(!showDebug)}
+                            className="p-3 bg-white/10 hover:bg-white/15 backdrop-blur-xl border border-white/10 rounded-lg shadow-lg transition-colors"
+                            title="Debug"
+                        >
+                            <Bug size={16} className="text-white/70" />
+                        </motion.button>
+                    </div>
+                )}
+
+                {/* Edit Modal */}
+                <AnimatePresence>
+                    {isEditOpen && hasContent && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 20 }}
+                            className="fixed bottom-36 right-6 z-50 bg-white/10 backdrop-blur-xl border border-white/10 rounded-lg p-4 shadow-2xl min-w-[300px] pointer-events-auto"
+                        >
+                            <form onSubmit={handleEditSubmit} className="flex flex-col gap-3">
+                                <input
+                                    type="text"
+                                    value={editQuery}
+                                    onChange={(e) => setEditQuery(e.target.value)}
+                                    placeholder="Refine: e.g., make it more compact"
+                                    className="w-full bg-white/5 border border-white/10 rounded-md px-3 py-2 text-sm text-white/75 placeholder-white/30 focus:outline-none focus:border-white/20"
+                                    autoFocus
+                                />
+                                <div className="flex items-center justify-between">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsEditOpen(false)}
+                                        className="text-xs text-white/50 hover:text-white/70 transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={!editQuery.trim() || isStreaming}
+                                        className="px-3 py-1.5 text-xs bg-white/10 hover:bg-white/20 text-white/70 hover:text-white rounded-md transition-colors disabled:opacity-30"
+                                    >
+                                        Refine
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 {/* Bottom Search Area - Fixed */}
                 <div className="fixed bottom-6 left-0 right-0 flex flex-col items-center justify-center z-50 pointer-events-none">
@@ -340,12 +389,17 @@ export default function HomePage() {
                                         key={i}
                                         onClick={() => handleSuggestionClick(prompt)}
                                         className={cn(
-                                            "px-4 py-2 text-sm text-white/70 hover:text-white transition-colors border border-white/10 hover:border-white/20 shadow-lg backdrop-blur-xl",
+                                            "px-4 py-2 text-sm transition-all shadow-lg backdrop-blur-xl",
+                                            "text-white hover:text-white",
+                                            "border border-white/10 hover:border-white/20",
                                             hasContent 
                                                 ? "bg-white/10 hover:bg-white/15 rounded-lg" 
-                                                : "rounded-full bg-white/5 hover:bg-white/10"
+                                                : "bg-white/5 hover:bg-white/10 rounded-full"
                                         )}
-                                        style={{ backdropFilter: 'blur(12px)' }}
+                                        style={{ 
+                                            backdropFilter: 'blur(12px)',
+                                            textShadow: '0 2px 4px rgba(0, 0, 0, 0.6), 0 1px 2px rgba(0, 0, 0, 0.4)'
+                                        }}
                                     >
                                         {prompt}
                                     </button>
