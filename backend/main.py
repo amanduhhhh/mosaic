@@ -4,13 +4,14 @@ from fastapi.responses import StreamingResponse, JSONResponse, HTMLResponse
 from pydantic import BaseModel
 from litellm import acompletion
 import json
+import os
 from typing import AsyncGenerator, Optional
 
 from config import get_settings
 from data import MOCK_DATA
 from utils import get_data, sanitize_prompt
 from prompts import build_planning_prompt, build_ui_system_prompt, build_ui_user_prompt
-import openai
+from litellm import completion
 from integrations import (
     SpotifyDataFetcher,
     StocksDataFetcher,
@@ -18,9 +19,14 @@ from integrations import (
     StravaDataFetcher,
     ClashRoyaleDataFetcher,
 )
+from tool_generator import generate_tools_from_fetchers
 
 app = FastAPI()
 settings = get_settings()
+
+# Set environment variables for litellm
+os.environ["ANTHROPIC_API_KEY"] = settings.anthropic_api_key
+os.environ["OPENAI_API_KEY"] = settings.openai_api_key
 
 spotify_fetcher = SpotifyDataFetcher(
     client_id=settings.spotify_client_id,
@@ -39,6 +45,16 @@ strava_fetcher = StravaDataFetcher(
 )
 clash_fetcher = ClashRoyaleDataFetcher(api_key=settings.clashroyale_api_key)
 
+fetchers = {
+    "spotify": spotify_fetcher,
+    "stocks": stocks_fetcher,
+    "sports": sports_fetcher,
+    "strava": strava_fetcher,
+    "clash": clash_fetcher
+}
+
+tools, available_functions = generate_tools_from_fetchers(fetchers)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -53,139 +69,27 @@ class GenerateRequest(BaseModel):
 
 class QueryRequest(BaseModel):
     prompt: str
+    model: str = "gpt-4o-mini"
 
-
-def get_spotify_data():
-    """Get user's Spotify listening data including top songs, artists, and genres"""
-    return spotify_fetcher.fetch_user_data()
-
-def get_stock_info(symbol: str):
-    """Get detailed information for a specific stock symbol"""
-    return stocks_fetcher.fetch_stock_info(symbol)
-
-def get_market_trends():
-    """Get current stock market trends, indices, and top movers"""
-    return stocks_fetcher.fetch_market_trends()
-
-def get_portfolio_data(symbols: list):
-    """Get portfolio data for multiple stock symbols"""
-    return stocks_fetcher.fetch_portfolio_data(symbols)
-
-def get_sports_team_data(team_name: str):
-    """Search for a sports team and get their current stats"""
-    team_info = sports_fetcher.search_team(team_name)
-    if team_info:
-        stats = sports_fetcher.get_team_stats(team_info["abbreviation"])
-        return {**team_info, **stats}
-    return None
-
-def get_strava_data():
-    """Get user's Strava fitness activities and stats"""
-    return strava_fetcher.fetch_activities()
-
-def get_clash_data():
-    """Get user's Clash Royale game data"""
-    return clash_fetcher.fetch_player_data()
-
-tools = [
-    {
-        "type": "function",
-        "function": {
-            "name": "get_spotify_data",
-            "description": "Get user's Spotify listening data including top songs, artists, genres, and listening time"
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "get_stock_info",
-            "description": "Get detailed information for a specific stock symbol",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "symbol": {"type": "string", "description": "Stock ticker symbol (e.g., AAPL, TSLA)"}
-                },
-                "required": ["symbol"]
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "get_market_trends",
-            "description": "Get current stock market trends, major indices, and top gainers/losers"
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "get_portfolio_data",
-            "description": "Get portfolio data for multiple stock symbols",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "symbols": {"type": "array", "items": {"type": "string"}, "description": "List of stock symbols"}
-                },
-                "required": ["symbols"]
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "get_sports_team_data",
-            "description": "Search for a sports team and get their current stats including wins, losses, and venue",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "team_name": {"type": "string", "description": "Name of the sports team (e.g., Lakers, Warriors)"}
-                },
-                "required": ["team_name"]
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "get_strava_data",
-            "description": "Get user's Strava fitness activities and running stats"
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "get_clash_data",
-            "description": "Get user's Clash Royale game statistics and player data"
-        }
-    }
-]
-
-available_functions = {
-    "get_spotify_data": get_spotify_data,
-    "get_stock_info": get_stock_info,
-    "get_market_trends": get_market_trends,
-    "get_portfolio_data": get_portfolio_data,
-    "get_sports_team_data": get_sports_team_data,
-    "get_strava_data": get_strava_data,
-    "get_clash_data": get_clash_data
-}
 
 @app.post("/api/query")
 async def intelligent_query(request: QueryRequest):
-    """Use OpenAI function calling to dynamically fetch data based on user prompt"""
+    """Use LiteLLM function calling to dynamically fetch data based on user prompt"""
     prompt = sanitize_prompt(request.prompt)
-    openai.api_key = settings.openai_api_key
+    
+    api_key = settings.openai_api_key if "gpt" in request.model else settings.anthropic_api_key
     
     messages = [
         {"role": "system", "content": "You are a helpful assistant that retrieves user data from various sources. Use the available functions to fetch the requested data."},
         {"role": "user", "content": prompt}
     ]
     
-    response = openai.chat.completions.create(
-        model="gpt-4o-mini",
+    response = completion(
+        model=request.model,
         messages=messages,
         tools=tools,
-        tool_choice="auto"
+        tool_choice="auto",
+        api_key=api_key
     )
     
     response_message = response.choices[0].message
@@ -202,7 +106,10 @@ async def intelligent_query(request: QueryRequest):
         function_args = json.loads(tool_call.function.arguments)
         functions_called.append({"function": function_name, "args": function_args})
         
-        function_to_call = available_functions[function_name]
+        function_to_call = available_functions.get(function_name)
+        if not function_to_call:
+            data[function_name] = {"error": f"Unknown function: {function_name}"}
+            continue
         
         try:
             if function_args:
@@ -214,7 +121,7 @@ async def intelligent_query(request: QueryRequest):
         except Exception as e:
             data[function_name] = {"error": str(e)}
     
-    return {"prompt": prompt, "functions_called": functions_called, "data": data}
+    return {"prompt": prompt, "model": request.model, "functions_called": functions_called, "data": data}
 
 
 class RefineRequest(BaseModel):
@@ -448,14 +355,41 @@ async def generate_ui(request: GenerateRequest):
     async def event_stream() -> AsyncGenerator[str, None]:
         try:
             plan = await plan_and_classify(request.query)
-            data_context = get_data(plan["sources"], MOCK_DATA)
+            
+            # Fetch real data based on sources
+            data_context = {}
+            sources = plan.get("sources", [])
+            
+            # Extract unique namespaces from sources (e.g., "music::top_songs" -> "music")
+            namespaces = set()
+            for source in sources:
+                if "::" in source:
+                    namespace = source.split("::")[0]
+                    namespaces.add(namespace)
+                else:
+                    namespaces.add(source)
+            
+            for namespace in namespaces:
+                if namespace == "music":
+                    if spotify_fetcher.is_authenticated():
+                        spotify_data = spotify_fetcher.fetch_user_data()
+                        if spotify_data:
+                            data_context["music"] = spotify_data
+                        else:
+                            data_context["music"] = MOCK_DATA.get("music", {})
+                    else:
+                        # Fall back to mock data if not authenticated
+                        data_context["music"] = MOCK_DATA.get("music", {})
+                elif namespace in MOCK_DATA:
+                    data_context[namespace] = MOCK_DATA[namespace]
+            
             intent = plan.get("intent", "")
             approach = plan.get("approach", "")
 
             yield f"event: data\ndata: {json.dumps(data_context)}\n\n"
 
             response = await acompletion(
-                model=settings.model,
+                model="anthropic/claude-sonnet-4-20250514",
                 messages=[
                     {
                         "role": "system",
@@ -539,7 +473,7 @@ Respond to the user's edit request:
 Think: tweaking a shipped app, not rebuilding."""
 
             response = await acompletion(
-                model=settings.model,
+                model="anthropic/claude-sonnet-4-20250514",
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": request.query},
@@ -574,7 +508,7 @@ Think: tweaking a shipped app, not rebuilding."""
 
 async def plan_and_classify(query: str) -> dict:
     response = await acompletion(
-        model=settings.model,
+        model="anthropic/claude-sonnet-4-20250514",
         messages=[{"role": "user", "content": build_planning_prompt(query)}],
         max_tokens=300,
         api_key=settings.anthropic_api_key,

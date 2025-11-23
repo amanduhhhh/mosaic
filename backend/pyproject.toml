@@ -18,4 +18,4 @@ dependencies = [
 ]
 
 [tool.setuptools]
-py-modules = ["main", "config", "data", "utils"]
+py-modules = ["main", "config", "data", "utils", "prompts", "tool_generator"]
