@@ -10,6 +10,17 @@ import {
   CalendarAdapter,
 } from './adapters';
 
+// import {
+//   ListPlaceholder,
+//   CardPlaceholder,
+//   ChartPlaceholder,
+//   GridPlaceholder,
+//   TimelinePlaceholder,
+//   TablePlaceholder,
+//   ClickablePlaceholder,
+// } from './placeholders';
+
+
 export const COMPONENT_REGISTRY: ComponentRegistry = {
   List: ListAdapter,
   Card: CardAdapter,
@@ -20,3 +31,14 @@ export const COMPONENT_REGISTRY: ComponentRegistry = {
   Vinyl: VinylAdapter,
   Calendar: CalendarAdapter,
 };
+
+// export const COMPONENT_REGISTRY: ComponentRegistry = {
+//   List: ListPlaceholder,
+//   Card: CardPlaceholder,
+//   Chart: ChartPlaceholder,
+//   Grid: GridPlaceholder,
+//   Timeline: TimelinePlaceholder,
+//   Table: TablePlaceholder,
+//   Clickable: ClickablePlaceholder,
+// };
+
