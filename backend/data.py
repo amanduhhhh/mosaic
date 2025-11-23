@@ -391,4 +391,19 @@ COMPONENT_SCHEMAS = {
             }
         }
     },
+    "Vinyl": {
+        "description": "Animated vinyl record card displaying album art with spinning animation. Best for showcasing top songs/albums",
+        "data": {"title": "string", "artist": "string", "image": "url - optional"},
+        "config": {
+            "template": {
+                "primary": "field_name for song/album title - optional",
+                "secondary": "field_name for artist - optional"
+            },
+            "layout": "label text (e.g., 'Most Played', 'Top Track') - optional"
+        },
+        "example": {
+            "data": {"title": "Blinding Lights", "artist": "The Weeknd", "image": "https://..."},
+            "config": {"layout": "Most Played"}
+        }
+    },
 }

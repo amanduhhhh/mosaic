@@ -144,7 +144,7 @@ export function BarChart({
                                 "transition-all duration-300",
                                 theme === 'impact' && "hover:fill-primary/80",
                                 theme === 'elegant' && "hover:fill-primary/80",
-                                theme === 'neobrutalism' && "hover:fill-[var(--chart-2)]"
+                                theme === 'neobrutalism' && "hover:opacity-80"
                             )}
                         />
                     </RechartsBarChart>

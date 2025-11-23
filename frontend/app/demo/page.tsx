@@ -8,6 +8,7 @@ import { Table } from '@/components/core/Table';
 import { Timeline } from '@/components/core/Timeline';
 import { LineChart } from '@/components/core/LineChart';
 import { BarChart } from '@/components/core/BarChart';
+import { VinylCard } from '@/components/core/VinylCard';
 import type { ThemeName } from '@/components/types';
 import { TrendingUp, Users, DollarSign, Activity } from 'lucide-react';
 
@@ -191,36 +192,48 @@ export default function DemoPage() {
                 </section>
 
 
-                {/* Theme Showcase - All Cards in Current Theme */}
-                <section className="mt-16">
-                    <h2 className="text-2xl font-bold text-foreground mb-6">
-                         Current Theme: {selectedTheme}
-                    </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <Card
-                            variant="default"
-                            title="Default Card"
-                            onClick={() => alert('Card clicked!')}
-                        >
-                            <p className="text-muted-foreground">
-                                This is a default card with custom content. Click me!
-                            </p>
-                        </Card>
-                        <Card
-                            variant="metric"
-                            icon={<DollarSign className="w-6 h-6" />}
-                            title="Sales"
-                            value="$125,430"
-                            subtitle="This month"
-                        />
-                        <Card
-                            variant="stat"
-                            title="Success Rate"
-                            value="94.2%"
-                            trend={{ value: 5.1, label: '+5.1% improvement' }}
-                        />
-                    </div>
-                </section>
+                    {/* Vinyl Section */}
+                    <section>
+                        <h2 className="text-2xl font-bold text-foreground mb-6"> Vinyl Card</h2>
+                        <div className="flex justify-center">
+                            <VinylCard
+                                title="Blinding Lights"
+                                artist="The Weeknd"
+                                label="Most Played"
+                            />
+                        </div>
+                    </section>
+
+                    {/* Theme Showcase - All Cards in Current Theme */}
+                    <section className="mt-16">
+                        <h2 className="text-2xl font-bold text-foreground mb-6">
+                             Current Theme: {selectedTheme}
+                        </h2>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <Card
+                                variant="default"
+                                title="Default Card"
+                                onClick={() => alert('Card clicked!')}
+                            >
+                                <p className="text-muted-foreground">
+                                    This is a default card with custom content. Click me!
+                                </p>
+                            </Card>
+                            <Card
+                                variant="metric"
+                                icon={<DollarSign className="w-6 h-6" />}
+                                title="Sales"
+                                value="$125,430"
+                                subtitle="This month"
+                            />
+                            <Card
+                                variant="stat"
+                                title="Success Rate"
+                                value="94.2%"
+                                trend={{ value: 5.1, label: '+5.1% improvement' }}
+                            />
+                        </div>
+                    </section>
             </div>
         </div>
     );

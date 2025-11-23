@@ -5,3 +5,4 @@ export { Timeline } from './Timeline';
 export { LineChart } from './LineChart';
 export { BarChart } from './BarChart';
 export { Header } from './Header';
+export { VinylCard } from './VinylCard';

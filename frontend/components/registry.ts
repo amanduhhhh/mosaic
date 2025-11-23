@@ -6,6 +6,7 @@ import {
   TimelineAdapter,
   GridAdapter,
   TableAdapter,
+  VinylAdapter,
 } from './adapters';
 
 export const COMPONENT_REGISTRY: ComponentRegistry = {
@@ -15,4 +16,5 @@ export const COMPONENT_REGISTRY: ComponentRegistry = {
   Grid: GridAdapter,
   Timeline: TimelineAdapter,
   Table: TableAdapter,
+  Vinyl: VinylAdapter,
 };
