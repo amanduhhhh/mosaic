@@ -31,17 +31,13 @@ def describe_data(data_context: dict) -> str:
                 if len(value) > 0:
                     sample = value[0]
                     if isinstance(sample, dict):
-                        # Show field names with their types (including nested arrays)
                         field_types = [f"{k}: {describe_type(v)}" for k, v in sample.items()]
                         lines.append(f"  {source} (array of {len(value)}) - {{{', '.join(field_types)}}}")
-                        # Show first item as example with more fields
                         items = [f"{k}={repr(v)[:30]}" for k, v in list(sample.items())[:8]]
                         lines.append(f"    [0]: {{{', '.join(items)}}}")
 
-                        # If there's a nested array, describe its contents
                         for field_name, field_value in sample.items():
                             if isinstance(field_value, list) and len(field_value) > 0 and isinstance(field_value[0], dict):
-                                nested_fields = [f"{k}: {type(v).__name__}" for k, v in field_value[0].items()]
                                 nested_example = [f"{k}={repr(v)[:25]}" for k, v in list(field_value[0].items())[:6]]
                                 lines.append(f"      {field_name}[0]: {{{', '.join(nested_example)}}}")
                     else:
@@ -244,7 +240,7 @@ Return JSON:
 def build_ui_system_prompt(intent: str, approach: str) -> str:
     return f"""You generate HTML for a mobile-first app screen that feels alive and engaging.
 
-IMPORTANT: Output ONLY raw HTML. No markdown. No code fences. No ```html. Just the HTML starting with <div>.
+VERY IMPORTANT: Output ONLY raw HTML. No markdown. No code fences. No ```html.
 
 ## Vision
 Intent: {intent}
@@ -426,7 +422,7 @@ def build_refine_system_prompt(current_html: str) -> str:
     """System prompt for refining existing UI"""
     return f"""You're editing a live app screen. Make the requested changes while preserving data bindings.
 
-IMPORTANT: Output ONLY raw HTML. No markdown. No code fences. No ```html. Just the HTML starting with <div>.
+VERY IMPORTANT: Output ONLY raw HTML. No markdown. No code fences. No ```html.
 
 ## Current Screen
 {current_html}
@@ -493,7 +489,7 @@ def build_interact_system_prompt(clicked_item_desc: str, click_prompt: str, comp
     """System prompt for drill-down interaction views"""
     return f"""You're generating a drill-down detail view based on user interaction.
 
-IMPORTANT: Output ONLY raw HTML. No markdown. No code fences. No ```html. Just the HTML starting with <div>.
+VERY IMPORTANT: Output ONLY raw HTML. No markdown. No code fences. No ```html.
 
 ## Interaction Context
 The user clicked on a {component_type} component.

@@ -46,7 +46,6 @@ export function resolveDataSource(
   const namespaceData = dataContext[namespace];
   if (!namespaceData) return null;
 
-  // Support path resolution like "teams[0].schedule"
   const value = resolvePath(namespaceData, path);
   if (value === null || value === undefined || typeof value !== 'object') {
     return null;
@@ -67,7 +66,6 @@ export function resolveDataValue(
   const namespaceData = dataContext[namespace];
   if (!namespaceData) return null;
 
-  // Support path resolution like "teams[0].wins"
   const value = resolvePath(namespaceData, path);
   if (value === null || value === undefined) {
     return null;
