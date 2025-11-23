@@ -367,15 +367,20 @@ COMPONENT_SCHEMAS = {
         }
     },
     "Grid": {
-        "description": "Grid layout. Images: albums, products, photos.",
+        "description": "Grid layout. Images/cards in a grid. Albums, products, photos, game cards, etc.",
         "size": "Full width. Items: 150-250px square.",
         "data": [{"id": "string|number", "title": "string - optional", "image": "url - optional"}],
         "config": {
+            "template": {
+                "title": "field_name for card title - REQUIRED",
+                "subtitle": "field_name for subtitle/secondary text - OPTIONAL", 
+                "image": "field_name for image URL - OPTIONAL"
+            },
             "columns": "number 1-6, default 3"
         },
         "example": {
-            "data": [{"id": 1, "title": "Album 1", "image": "https://..."}],
-            "config": {"columns": 4}
+            "data": [{"id": 1, "name": "Item A", "category": "Type 1", "img_url": "https://..."}],
+            "config": {"template": {"title": "name", "subtitle": "category", "image": "img_url"}, "columns": 4}
         }
     },
     "Timeline": {
@@ -396,18 +401,19 @@ COMPONENT_SCHEMAS = {
         }
     },
     "Table": {
-        "description": "Sortable data table. Structured data, stats, leaderboards. Max 10 rows.",
+        "description": "Sortable data table. Structured data, stats, leaderboards. Use when you have multiple data points per item and want columns. Max 10 rows.",
         "size": "Full width, min 500px. ~50px/row + 60px header.",
-        "data": [{"[any_field]": "any"}],
+        "data": [{"[any_field]": "any - you choose which fields to display as columns"}],
         "config": {
             "columns": [
-                {"key": "field_name - REQUIRED", "label": "header text - REQUIRED", "sortable": "boolean - optional"}
+                {"key": "field_name from data - REQUIRED", "label": "column header text - REQUIRED", "sortable": "boolean - optional"}
             ]
         },
         "example": {
-            "data": [{"player": "LeBron James", "team": "Lakers", "points": 28.5}],
-            "config": {"columns": [{"key": "player", "label": "Player", "sortable": True}, {"key": "points", "label": "PPG", "sortable": True}]}
-        }
+            "data": [{"name": "Item A", "category": "Type 1", "value": 100}],
+            "config": {"columns": [{"key": "name", "label": "Name"}, {"key": "category", "label": "Category"}, {"key": "value", "label": "Value", "sortable": True}]}
+        },
+        "note": "Columns array defines which fields to show and in what order. Check your data context for available fields."
     },
     "Vinyl": {
         "description": "Large animated vinyl card - visually prominent component. Featured items. Any field combination: song+artist, artist+genre, album+year, etc. Takes significant space - use sparingly (1 per view max).",
@@ -426,17 +432,21 @@ COMPONENT_SCHEMAS = {
         }
     },
     "Calendar": {
-        "description": "Calendar component with date markers. Shows events, deadlines, appointments. Highlights current day.",
+        "description": "Calendar component with date markers. Shows events, deadlines, appointments. Highlights current day. Use when you have dated events.",
         "size": "400-500px width, 350-400px height. Fixed size.",
-        "data": [{"date": "YYYY-MM-DD", "description": "string - REQUIRED"}],
-        "config": {},
+        "data": [{"[any_field]": "any - must have date field (YYYY-MM-DD) and description"}],
+        "config": {
+            "template": {
+                "date": "field_name for date in YYYY-MM-DD format - REQUIRED",
+                "description": "field_name for event description - REQUIRED"
+            }
+        },
         "example": {
             "data": [
-                {"date": "2024-01-15", "description": "Team meeting"},
-                {"date": "2024-01-20", "description": "Project deadline"},
-                {"date": "2024-01-25", "description": "Client presentation"}
+                {"event_date": "2024-01-15", "event_name": "Meeting"},
+                {"event_date": "2024-01-20", "event_name": "Deadline"}
             ],
-            "config": {}
+            "config": {"template": {"date": "event_date", "description": "event_name"}}
         }
     },
     "Clickable": {

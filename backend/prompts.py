@@ -146,15 +146,16 @@ Chart example (ONLY for arrays of objects with numeric fields):
 ></component-slot>
 ```
 
-Grid example (side-by-side comparisons):
+Grid example (side-by-side items):
 ```html
 <component-slot
   type="Grid"
-  data-source="sports::teams"
-  config='{{"template":{{"title":"name","subtitle":"wins"}},"columns":2}}'
-  click-prompt="Show detailed team stats and schedule"
+  data-source="namespace::items"
+  config='{{"template":{{"title":"item_name","subtitle":"category"}},"columns":3}}'
+  click-prompt="Show detailed item information"
 ></component-slot>
 ```
+The template maps YOUR data fields to Grid's display. Check the data context for actual field names.
 
 Timeline example (ONLY for chronological/dated events):
 ```html
@@ -171,11 +172,12 @@ Table example (tabular data with multiple columns):
 ```html
 <component-slot
   type="Table"
-  data-source="finance::recent_transactions"
-  config='{{"template":{{"columns":["date","merchant","category","amount","status"]}}}}'
-  click-prompt="Show transaction details and related spending patterns"
+  data-source="namespace::items"
+  config='{{"columns":[{{"key":"field_a","label":"Column A"}},{{"key":"field_b","label":"Column B","sortable":true}}]}}'
+  click-prompt="Show detailed information"
 ></component-slot>
 ```
+Columns define which fields to display. Check the data context for actual field names.
 
 Vinyl example (music-only - visually striking, use for featured song/album):
 ```html
@@ -191,11 +193,12 @@ Calendar example (for events/activities with dates):
 ```html
 <component-slot
   type="Calendar"
-  data-source="fitness::recent_activities"
-  config='{{}}'
-  click-prompt="Show activity details for this date"
+  data-source="namespace::dated_events"
+  config='{{"template":{{"date":"event_date","description":"event_name"}}}}'
+  click-prompt="Show event details for this date"
 ></component-slot>
 ```
+Calendar needs dates in YYYY-MM-DD format. The template maps YOUR data fields to the calendar's display.
 
 Clickable example (interactive buttons - ALWAYS use this, never raw button tags):
 ```html
