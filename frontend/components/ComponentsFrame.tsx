@@ -5,7 +5,7 @@ import { createRoot, Root } from 'react-dom/client';
 import DOMPurify from 'dompurify';
 import morphdom from 'morphdom';
 import { motion } from 'framer-motion';
-import { COMPONENT_REGISTRY } from './registry';
+import { WIDGET_MAP } from './widget-map';
 import type {
   ComponentConfig,
   ComponentProps,
@@ -16,7 +16,7 @@ import type {
 } from './types';
 import { generateSlotId, resolveDataSource, parseConfig, resolveDataValue } from './utils';
 
-interface HybridRendererProps {
+interface ComponentsFrameProps {
   htmlContent: string;
   dataContext: DataContext;
   onInteraction: (type: string, payload: InteractionPayload) => void;
@@ -55,17 +55,17 @@ class SlotErrorBoundary extends React.Component<
 }
 
 const DOMPURIFY_CONFIG = {
-  ADD_TAGS: ['component-slot', 'data-value'],
+  ADD_TAGS: ['widget-embed', 'inject-text'],
   ADD_ATTR: ['type', 'data-source', 'config', 'click-prompt', 'slot-id'],
 };
 
-export function HybridRenderer({
+export function ComponentsFrame({
   htmlContent,
   dataContext,
   onInteraction,
   onLog,
   isInteracting = false,
-}: HybridRendererProps) {
+}: ComponentsFrameProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const rootsRef = useRef<Map<string, Root>>(new Map());
   const mountedSlotsRef = useRef<Set<string>>(new Set());
@@ -104,7 +104,7 @@ export function HybridRenderer({
         return;
       }
 
-      const Component = COMPONENT_REGISTRY[componentType];
+      const Component = WIDGET_MAP[componentType];
       if (!Component) {
         log('mount', `Unknown component type: ${componentType}`);
         const emptyDiv = document.createElement('div');
@@ -135,7 +135,7 @@ export function HybridRenderer({
       };
 
       const wrapper = document.createElement('div');
-      wrapper.className = 'hybrid-slot';
+      wrapper.className = 'widget-container';
       wrapper.setAttribute('data-slot-id', slotId);
       slot.replaceWith(wrapper);
 
@@ -215,11 +215,11 @@ export function HybridRenderer({
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = sanitized;
 
-    tempDiv.querySelectorAll('component-slot').forEach((slot) => {
+    tempDiv.querySelectorAll('widget-embed').forEach((slot) => {
       const slotId = generateSlotId(slot);
       if (rootsRef.current.has(slotId)) {
         const placeholder = document.createElement('div');
-        placeholder.className = 'hybrid-slot';
+        placeholder.className = 'widget-container';
         placeholder.setAttribute('data-slot-id', slotId);
         slot.replaceWith(placeholder);
       }
@@ -243,7 +243,7 @@ export function HybridRenderer({
       },
     });
 
-    container.querySelectorAll('data-value[data-source]').forEach((el) => {
+    container.querySelectorAll('inject-text[data-source]').forEach((el) => {
       const source = el.getAttribute('data-source');
       if (!source) return;
 
@@ -254,7 +254,7 @@ export function HybridRenderer({
       }
     });
 
-    container.querySelectorAll('component-slot').forEach((slot) => {
+    container.querySelectorAll('widget-embed').forEach((slot) => {
       const slotId = generateSlotId(slot);
       if (!mountedSlotsRef.current.has(slotId)) {
         mountComponent(slot, slotId);
@@ -276,7 +276,7 @@ export function HybridRenderer({
       initial={{ opacity: 0 }}
       animate={{ opacity: isReady ? (isInteracting ? 0.5 : 1) : 0 }}
       transition={{ duration: 0.2 }}
-      className="hybrid-renderer w-full"
+      className="components-frame w-full"
       style={{
         pointerEvents: isInteracting ? 'none' : 'auto',
       }}

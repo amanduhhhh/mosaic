@@ -9,9 +9,9 @@ import {
   VinylAdapter,
   CalendarAdapter,
 } from './adapters';
-import { ClickablePlaceholder } from './placeholders';
+import { ClickablePrimitive } from './primitives';
 
-export const COMPONENT_REGISTRY: ComponentRegistry = {
+export const WIDGET_MAP: ComponentRegistry = {
   List: ListAdapter,
   Card: CardAdapter,
   Chart: ChartAdapter,
@@ -20,7 +20,7 @@ export const COMPONENT_REGISTRY: ComponentRegistry = {
   Table: TableAdapter,
   Vinyl: VinylAdapter,
   Calendar: CalendarAdapter,
-  Clickable: ClickablePlaceholder,
+  Clickable: ClickablePrimitive,
 };
 
 // export const COMPONENT_REGISTRY: ComponentRegistry = {

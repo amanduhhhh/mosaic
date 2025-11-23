@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HybridRenderer } from '@/components/HybridRenderer';
+import { ComponentsFrame } from '@/components/ComponentsFrame';
 import type { DataContext, HydrationLog, InteractionPayload, CardData, ChartDataPoint, GridItem, TimelineEvent } from '@/components/types';
 
 const mockDataContext: DataContext = {
@@ -366,7 +366,7 @@ export default function TestHybridPage() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
               >
-                <HybridRenderer
+                <ComponentsFrame
                   htmlContent={htmlContent}
                   dataContext={mockDataContext}
                   onInteraction={handleInteraction}

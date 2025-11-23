@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HybridRenderer } from '@/components/HybridRenderer';
+import { ComponentsFrame } from '@/components/ComponentsFrame';
 import { useThemeStore } from '@/store/useThemeStore';
 import type { DataContext, HydrationLog, InteractionPayload, CardData, ChartDataPoint, GridItem, TimelineEvent, ThemeName } from '@/components/types';
 
@@ -391,7 +391,7 @@ export default function TestHybridThemedPage() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
               >
-                <HybridRenderer
+                <ComponentsFrame
                   htmlContent={htmlContent}
                   dataContext={mockDataContext}
                   onInteraction={handleInteraction}

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Script from 'next/script';
 import { useStreamStore } from '@/stores/stream';
-import { HybridRenderer } from '@/components/HybridRenderer';
+import { ComponentsFrame } from '@/components/ComponentsFrame';
 import { ThinkingWidget } from '@/components/ThinkingWidget';
 
 const PRESETS = [
@@ -151,7 +151,7 @@ export default function GeneratePage() {
             </div>
             {htmlContent ? (
               <div className="bg-zinc-900 rounded-lg overflow-hidden">
-                <HybridRenderer
+                <ComponentsFrame
                   htmlContent={htmlContent}
                   dataContext={dataContext}
                   onInteraction={handleInteraction}

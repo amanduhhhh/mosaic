@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import type { ComponentProps } from '../types';
 
-export function ClickablePlaceholder({ data, config, clickPrompt, onInteraction }: ComponentProps) {
+export function ClickablePrimitive({ data, config, clickPrompt, onInteraction }: ComponentProps) {
   const label = (data as string) || config.label || 'Click';
   const className = config.class || 'px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors';
   

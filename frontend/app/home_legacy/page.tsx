@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStreamStore } from '@/stores/stream';
 import { useThemeStore } from '@/store/useThemeStore';
-import { HybridRenderer } from '@/components/HybridRenderer';
+import { ComponentsFrame } from '@/components/ComponentsFrame';
 import { DraggableWindow } from '@/components/DraggableWindow';
 import { DebugWindow } from '@/components/DebugWindow';
 import {
@@ -277,7 +277,7 @@ export default function HomePage() {
                             }
                         >
                             <div className="bg-background p-6 min-h-full">
-                                <HybridRenderer
+                                <ComponentsFrame
                                     htmlContent={htmlContent}
                                     dataContext={dataContext}
                                     onInteraction={handleInteraction}

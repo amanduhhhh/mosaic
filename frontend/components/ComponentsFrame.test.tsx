@@ -1,5 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
-import { HybridRenderer } from './HybridRenderer';
+import { ComponentsFrame } from './ComponentsFrame';
 import type { DataContext, HydrationLog, InteractionPayload, ListItem, CardData } from './types';
 
 jest.mock('framer-motion', () => ({
@@ -30,7 +30,7 @@ const mockDataContext: DataContext = {
   },
 };
 
-describe('HybridRenderer', () => {
+describe('ComponentsFrame', () => {
   const mockOnInteraction = jest.fn<void, [string, InteractionPayload]>();
   const mockOnLog = jest.fn<void, [HydrationLog]>();
 
@@ -43,7 +43,7 @@ describe('HybridRenderer', () => {
     const htmlContent = '<div data-testid="test-div">Hello World</div>';
 
     render(
-      <HybridRenderer
+      <ComponentsFrame
         htmlContent={htmlContent}
         dataContext={{}}
         onInteraction={mockOnInteraction}
@@ -67,17 +67,17 @@ describe('HybridRenderer', () => {
   it('mounts List component and logs props correctly', async () => {
     const htmlContent = `
       <div>
-        <component-slot
+        <widget-embed
           type="List"
           data-source="music::top_tracks"
           config='{"template": {"primary": "title", "secondary": "artist"}}'
           interaction="smart"
-        ></component-slot>
+        ></widget-embed>
       </div>
     `;
 
     render(
-      <HybridRenderer
+      <ComponentsFrame
         htmlContent={htmlContent}
         dataContext={mockDataContext}
         onInteraction={mockOnInteraction}
@@ -113,21 +113,21 @@ describe('HybridRenderer', () => {
   it('handles multiple component-slots and logs each', async () => {
     const htmlContent = `
       <div>
-        <component-slot
+        <widget-embed
           type="List"
           data-source="music::top_tracks"
           config='{"template": {"primary": "title", "secondary": "artist"}}'
-        ></component-slot>
-        <component-slot
+        ></widget-embed>
+        <widget-embed
           type="Card"
           data-source="user::profile"
           config='{"template": {"primary": "title", "secondary": "description"}}'
-        ></component-slot>
+        ></widget-embed>
       </div>
     `;
 
     render(
-      <HybridRenderer
+      <ComponentsFrame
         htmlContent={htmlContent}
         dataContext={mockDataContext}
         onInteraction={mockOnInteraction}
@@ -163,16 +163,16 @@ describe('HybridRenderer', () => {
   it('handles invalid JSON in config and logs it', async () => {
     const htmlContent = `
       <div>
-        <component-slot
+        <widget-embed
           type="List"
           data-source="music::top_tracks"
           config='invalid json'
-        ></component-slot>
+        ></widget-embed>
       </div>
     `;
 
     render(
-      <HybridRenderer
+      <ComponentsFrame
         htmlContent={htmlContent}
         dataContext={mockDataContext}
         onInteraction={mockOnInteraction}
@@ -196,15 +196,15 @@ describe('HybridRenderer', () => {
   it('logs unknown component type', async () => {
     const htmlContent = `
       <div data-testid="container">
-        <component-slot
+        <widget-embed
           type="UnknownComponent"
           data-source="music::top_tracks"
-        ></component-slot>
+        ></widget-embed>
       </div>
     `;
 
     render(
-      <HybridRenderer
+      <ComponentsFrame
         htmlContent={htmlContent}
         dataContext={mockDataContext}
         onInteraction={mockOnInteraction}
@@ -229,14 +229,14 @@ describe('HybridRenderer', () => {
   it('handles missing data-source and logs null data', async () => {
     const htmlContent = `
       <div>
-        <component-slot
+        <widget-embed
           type="List"
-        ></component-slot>
+        ></widget-embed>
       </div>
     `;
 
     render(
-      <HybridRenderer
+      <ComponentsFrame
         htmlContent={htmlContent}
         dataContext={mockDataContext}
         onInteraction={mockOnInteraction}
@@ -261,15 +261,15 @@ describe('HybridRenderer', () => {
   it('handles missing namespace in data-source', async () => {
     const htmlContent = `
       <div>
-        <component-slot
+        <widget-embed
           type="List"
           data-source="nonexistent::data"
-        ></component-slot>
+        ></widget-embed>
       </div>
     `;
 
     render(
-      <HybridRenderer
+      <ComponentsFrame
         htmlContent={htmlContent}
         dataContext={mockDataContext}
         onInteraction={mockOnInteraction}
@@ -300,7 +300,7 @@ describe('HybridRenderer', () => {
     `;
 
     render(
-      <HybridRenderer
+      <ComponentsFrame
         htmlContent={htmlContent}
         dataContext={{}}
         onInteraction={mockOnInteraction}
@@ -321,17 +321,17 @@ describe('HybridRenderer', () => {
   it('calls onInteraction with correct typed payload', async () => {
     const htmlContent = `
       <div>
-        <component-slot
+        <widget-embed
           type="List"
           data-source="music::top_tracks"
           config='{"template": {"primary": "title", "secondary": "artist"}}'
           interaction="smart"
-        ></component-slot>
+        ></widget-embed>
       </div>
     `;
 
     render(
-      <HybridRenderer
+      <ComponentsFrame
         htmlContent={htmlContent}
         dataContext={mockDataContext}
         onInteraction={mockOnInteraction}
@@ -361,16 +361,16 @@ describe('HybridRenderer', () => {
   it('logs complete hydration lifecycle', async () => {
     const htmlContent = `
       <div>
-        <component-slot
+        <widget-embed
           type="List"
           data-source="music::top_tracks"
           config='{"template": {"primary": "title"}}'
-        ></component-slot>
+        ></widget-embed>
       </div>
     `;
 
     render(
-      <HybridRenderer
+      <ComponentsFrame
         htmlContent={htmlContent}
         dataContext={mockDataContext}
         onInteraction={mockOnInteraction}
@@ -401,15 +401,15 @@ describe('HybridRenderer', () => {
   it('cleans up roots on unmount', async () => {
     const htmlContent = `
       <div>
-        <component-slot
+        <widget-embed
           type="List"
           data-source="music::top_tracks"
-        ></component-slot>
+        ></widget-embed>
       </div>
     `;
 
     const { unmount } = render(
-      <HybridRenderer
+      <ComponentsFrame
         htmlContent={htmlContent}
         dataContext={mockDataContext}
         onInteraction={mockOnInteraction}
