@@ -286,33 +286,51 @@ COMPONENT_SCHEMAS = {
         }
     },
     "Card": {
-        "description": "Single card with flexible field mapping",
+        "description": "Single card with flexible field mapping. Supports metric cards (title + value), stat cards (title + value + trend), image cards, or default cards",
         "data": {"[any_field]": "any"},
         "config": {
             "template": {
                 "primary": "field_name for title - optional",
-                "secondary": "field_name for subtitle/description - optional"
+                "secondary": "field_name for subtitle/description - optional",
+                "value": "field_name for main value (for metric/stat cards) - optional"
             },
-            "layout": "'metric' | 'stat' | 'image' - optional, affects card style"
+            "layout": "'metric' | 'stat' | 'image' | 'default' - optional, affects card style. 'metric' shows title + large value, 'stat' shows title + value + trend, 'image' shows image + title, 'default' shows title + description"
         },
-        "example": {
-            "data": {"title": "Total Users", "description": "Active this month", "image": "url"},
-            "config": {"layout": "metric"}
+        "example_metric": {
+            "data": {"label": "Revenue", "amount": "$45,231", "subtitle": "This month"},
+            "config": {"layout": "metric", "template": {"primary": "label", "value": "amount", "secondary": "subtitle"}}
+        },
+        "example_stat": {
+            "data": {"title": "Conversion Rate", "value": "3.24%", "trend": {"value": 12.5, "label": "+12.5% from last month"}},
+            "config": {"layout": "stat"}
+        },
+        "example_image": {
+            "data": {"title": "Album", "description": "Artist Name", "image": "https://..."},
+            "config": {"layout": "image"}
         }
     },
     "Chart": {
-        "description": "Line or bar chart for numerical data visualization",
+        "description": "Line or bar chart for numerical data visualization. Default is line chart, use layout='bar' for bar chart",
         "data": [{"label": "string (x-axis)", "value": "number (y-axis)"}],
         "config": {
-            "layout": "'bar' for bar chart, default is line chart - optional",
-            "template": {"primary": "chart title/label - optional"}
+            "layout": "'bar' for bar chart, omit or 'line' for line chart - optional",
+            "template": {"primary": "chart title/label displayed above chart - optional"}
         },
-        "example": {
+        "example_line": {
             "data": [
                 {"label": "Jan", "value": 4200},
-                {"label": "Feb", "value": 5100}
+                {"label": "Feb", "value": 5100},
+                {"label": "Mar", "value": 4800}
             ],
-            "config": {"layout": "bar", "template": {"primary": "Monthly Revenue"}}
+            "config": {"template": {"primary": "Monthly Revenue"}}
+        },
+        "example_bar": {
+            "data": [
+                {"label": "Mon", "value": 45},
+                {"label": "Tue", "value": 72},
+                {"label": "Wed", "value": 58}
+            ],
+            "config": {"layout": "bar", "template": {"primary": "Weekly Activity"}}
         }
     },
     "Grid": {

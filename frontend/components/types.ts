@@ -36,7 +36,9 @@ export interface CardData {
   title?: string;
   description?: string;
   image?: string;
-  [key: string]: string | undefined;
+  value?: string | number;
+  trend?: { value: number; label: string };
+  [key: string]: string | number | { value: number; label: string } | undefined;
 }
 
 export interface ChartDataPoint {
