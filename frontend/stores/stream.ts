@@ -57,6 +57,15 @@ const stopSound = async () => {
   }
 };
 
+function sanitizeHtmlContent(content: string): string {
+  let sanitized = content;
+  sanitized = sanitized.replace(/^```html\n?/g, '');
+  sanitized = sanitized.replace(/^html\n/g, '');
+  sanitized = sanitized.replace(/^```\n?/g, '');
+  sanitized = sanitized.replace(/\n?```$/g, '');
+  return sanitized;
+}
+
 export const useStreamStore = create<StreamState>((set, get) => ({
   isStreaming: false,
   dataContext: {},
@@ -159,9 +168,7 @@ export const useStreamStore = create<StreamState>((set, get) => ({
                 });
                 break;
               case 'ui':
-                let content = data.content;
-                content = content.replace(/```html\n?/g, '');
-                content = content.replace(/```\n?/g, '');
+                const content = sanitizeHtmlContent(data.content);
                 set({
                   htmlContent: state.htmlContent + content,
                   rawResponse: state.rawResponse + content,
@@ -313,9 +320,7 @@ export const useStreamStore = create<StreamState>((set, get) => ({
                 });
                 break;
               case 'ui':
-                let refineContent = data.content;
-                refineContent = refineContent.replace(/```html\n?/g, '');
-                refineContent = refineContent.replace(/```\n?/g, '');
+                const refineContent = sanitizeHtmlContent(data.content);
                 set({
                   htmlContent: currentState.htmlContent + refineContent,
                   rawResponse: currentState.rawResponse + refineContent,
@@ -418,9 +423,7 @@ export const useStreamStore = create<StreamState>((set, get) => ({
                 set({ dataContext: data });
                 break;
               case 'ui':
-                let uiContent = data.content;
-                uiContent = uiContent.replace(/```html\n?/g, '');
-                uiContent = uiContent.replace(/```\n?/g, '');
+                const uiContent = sanitizeHtmlContent(data.content);
                 
                 if (firstUiChunk) {
                   set({
